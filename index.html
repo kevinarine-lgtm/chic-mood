@@ -20,14 +20,14 @@ header{ height:90px!important; min-height:auto!important; padding:0px 5%!importa
 <script>
 const SUPABASE_URL = 'https://lzldwlppfeokgrevbjvu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_omT8tL8IwMBZmolX_MdNSA_L4oca79k';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const WHATSAPP='5511982094505';let currentCategory='todos';let shipping=0;let currentPhotoIndex=0;let currentDetailId=null;let cart=JSON.parse(localStorage.getItem('chicMoodCartV3')||'[]');
 let globalProducts=[];
 const fallbackImg='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#f3dfc6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#a87936" font-family="serif" font-size="44">Chic Mood</text></svg>`);
 
 async function fetchProductsFromNuvem(){
-  const { data, error } = await supabase.from('produtos').select('*').order('id', { ascending: false });
+  const { data, error } = await db.from('produtos').select('*').order('id', { ascending: false });
   if(error) { console.error(error); return []; }
   return data.map(p => {
     if(!p.images || p.images.length === 0) p.images = [fallbackImg];
