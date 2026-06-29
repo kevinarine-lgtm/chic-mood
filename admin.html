@@ -16,58 +16,10 @@
     nav a,button{font-family:inherit}
     nav a{color:var(--text);text-decoration:none;font-size:16px}
     .cartBtn,.primary{border:1px solid var(--line);background:linear-gradient(135deg,var(--gold),var(--gold2));color:#fff;border-radius:999px;padding:11px 18px;cursor:pointer;box-shadow:0 8px 18px rgba(168,121,54,.18)}
-    .cartBtn span{background:#fff;color:var(--gold);border-radius:50%;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;margin-left:7px;font-size:13px}
-    .hero{max-width:1180px;margin:0 auto;padding:54px 20px 30px;text-align:center}
-    .kicker{letter-spacing:9px;color:var(--gold);font-size:13px;text-transform:uppercase}
-    .hero h1{font-size:46px;margin:14px 0 8px;color:var(--gold);font-style:italic;font-weight:400}
-    .hero p{max-width:680px;margin:0 auto;color:var(--muted);font-size:18px;line-height:1.6}
     .wrap{max-width:1180px;margin:0 auto;padding:20px}
     .panel{background:rgba(255,253,248,.72);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:28px}
-    .sectionTitle{text-align:center;margin:0 0 18px}
-    .sectionTitle .small{letter-spacing:8px;color:var(--gold);font-size:12px;text-transform:uppercase}
-    .sectionTitle h2{margin:8px 0 0;color:var(--gold);font-size:42px;font-style:italic;font-weight:400}
-    .filters{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:20px 0 28px}
     .chip,select,input,textarea{border:1px solid var(--line);background:#fffaf3;color:var(--text);border-radius:999px;padding:12px 16px;font-size:15px}
-    .chip{cursor:pointer}
-    .chip.active{background:var(--gold);color:#fff}
     select{min-width:220px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
-    .product{background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 14px 28px rgba(89,55,24,.08);cursor:pointer;transition:.2s}
-    .product:hover{transform:translateY(-3px)}
-    .product img{width:100%;height:230px;object-fit:cover;background:#f2e3d0}
-    .product .info{padding:16px}
-    .cat{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--gold)}
-    .product h3{margin:8px 0 4px;font-size:20px}
-    .sub{color:var(--muted);font-size:14px}
-    .price{font-weight:bold;color:var(--gold);font-size:22px;margin:12px 0}
-    .product button{width:100%}
-    .drawer,.modal{position:fixed;inset:0;display:none;z-index:20}
-    .drawer.open,.modal.open{display:block}
-    .overlay{position:absolute;inset:0;background:rgba(41,28,17,.42)}
-    .cart{position:absolute;right:0;top:0;height:100%;width:min(460px,94vw);background:#fffaf3;box-shadow:-18px 0 40px rgba(0,0,0,.16);padding:24px;overflow:auto}
-    .cart h2{color:var(--gold);font-style:italic;font-size:38px;font-weight:400;margin:0 0 16px}
-    .close{float:right;border:0;background:transparent;font-size:30px;color:var(--gold);cursor:pointer}
-    .item{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding:12px 0}
-    .item img{width:64px;height:64px;object-fit:cover;border-radius:12px}
-    .qty{display:flex;gap:6px;align-items:center}
-    .qty button{border:1px solid var(--line);background:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer}
-    .totals{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
-    .freteBox{margin-top:16px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:18px}
-    .freteBox input{width:100%;border-radius:14px;margin:10px 0}
-    .freteResult{color:var(--muted);line-height:1.5}
-    .whats{display:block;text-align:center;text-decoration:none;margin-top:16px;border-radius:999px;padding:14px;background:#25d366;color:#fff;font-weight:bold}
-    .adminHint{text-align:center;color:var(--muted);font-size:13px;margin:30px 0}
-    .empty{text-align:center;color:var(--muted);padding:34px}
-    .details{position:relative;z-index:2;margin:4vh auto;background:#fffaf3;border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);max-width:980px;max-height:92vh;overflow:auto;padding:22px}
-    .detailsGrid{display:grid;grid-template-columns:1.1fr .9fr;gap:24px}
-    .mainPhoto{width:100%;height:520px;object-fit:cover;border-radius:22px;background:#f2e3d0}
-    .thumbs{display:flex;gap:10px;overflow:auto;margin-top:10px}
-    .thumbs img{width:78px;height:78px;object-fit:cover;border-radius:12px;border:2px solid transparent;cursor:pointer}
-    .thumbs img.active{border-color:var(--gold)}
-    .details h2{font-size:38px;color:var(--gold);font-style:italic;font-weight:400;margin:8px 0}
-    .desc{white-space:pre-wrap;line-height:1.7;color:var(--muted)}
-    .admin{max-width:980px;margin:0 auto;padding:24px}
-    .admin h1{color:var(--gold);font-style:italic;font-weight:400}
     .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .formGrid .full{grid-column:1/-1}
     .admin input,.admin select,.admin textarea{width:100%;border-radius:14px}
@@ -75,26 +27,21 @@
     .listAdmin{display:grid;gap:16px;margin-top:22px}
     .adminProduct{display:grid;grid-template-columns:76px 1fr auto;gap:16px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;box-shadow:0 4px 10px rgba(0,0,0,0.035)}
     .adminProduct img{width:76px;height:76px;min-width:76px;max-width:76px;object-fit:cover;border-radius:12px;display:block}
-    .adminProduct .prod-actions{display:flex;gap:8px;flex-wrap:nowrap}
+    .adminProduct .prod-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    
     .danger{background:#fff;color:#9b2f2f;border:1px solid rgba(155,47,47,.25);border-radius:999px;padding:10px 14px;cursor:pointer;white-space:nowrap}
     .ghost{background:#fff;color:var(--gold);border:1px solid var(--line);border-radius:999px;padding:10px 14px;cursor:pointer;white-space:nowrap}
+    
+    /* BOTÃO DE REGISTRAR VENDA RÁPIDA */
+    .success{background:#4a7c59;color:#fff;border:1px solid rgba(74,124,89,.25);border-radius:999px;padding:10px 14px;cursor:pointer;white-space:nowrap;box-shadow:0 4px 10px rgba(74,124,89,.15)}
+    
     .previewImgs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
     .previewImgs img{width:70px;height:70px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
-    .videoBox{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px}
-    .videoBox video,.videoBox iframe{width:100%;max-height:420px;border:0;border-radius:14px;background:#000}
-    .videoBox a{color:var(--gold);font-weight:bold}
-    .videoBadge{display:inline-block;margin-top:4px;color:var(--gold);font-size:12px;letter-spacing:1px;text-transform:uppercase}
-    .previewVideo{margin:8px 0}
     .previewVideo video{max-width:220px;max-height:160px;border-radius:14px;border:1px solid var(--line)}
+    
     @media(max-width:760px){
-      .nav{align-items:flex-start}
-      .brand{font-size:28px}
-      nav{gap:8px}
-      .hero h1{font-size:36px}
-      .formGrid,.detailsGrid{grid-template-columns:1fr}
-      .sectionTitle h2{font-size:34px}
-      .mainPhoto{height:360px}
-      .cart{width:96vw}
+      .nav{align-items:flex-start}.brand{font-size:28px}nav{gap:8px}
+      .formGrid{grid-template-columns:1fr}
       .adminProduct{grid-template-columns:1fr;text-align:center;justify-items:center;padding:16px}
       .adminProduct img{width:90px;height:90px;min-width:90px;max-width:90px}
       .adminProduct .prod-actions{width:100%;justify-content:center;margin-top:12px}
@@ -103,38 +50,34 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <header>
-    <div class="nav">
-      <div class="brand">Chic Mood Dashboard</div>
-      <nav>
-        <a href="index.html">Ver loja</a>
-      </nav>
-    </div>
-  </header>
-  
+  <header><div class="nav"><div class="brand">Chic Mood Dashboard</div><nav><a href="index.html">Ver loja</a></nav></div></header>
   <main class="admin">
     <section id="loginBox" class="panel">
       <h1>Dashboard Chic Mood</h1>
       <p>Digite a senha para editar produtos.</p>
-      <input id="pass" type="password" placeholder="Senha">
-      <br><br>
+      <input id="pass" type="password" placeholder="Senha"><br><br>
       <button class="primary" onclick="login()">Entrar</button>
     </section>
     
     <section id="adminBox" class="panel" style="display:none">
       <h1>Produtos</h1>
-      <p>Cadastre várias fotos, descrição completa, categoria e subcategoria. A subcategoria pode ser marca, tipo ou coleção.</p>
+      <p>Gerencie o catálogo, códigos internos, estoque real e preços de custo da sua marca.</p>
       <div class="formGrid">
         <input id="name" placeholder="Nome do produto">
-        <input id="price" placeholder="Preço. Ex: 89.90" inputmode="decimal">
+        <input id="price" placeholder="Preço de Venda. Ex: 89.90" inputmode="decimal">
+        
+        <input id="codigo" placeholder="Código do Produto (Ex: BR-001)">
+        <input id="quantidade" type="number" placeholder="Quantidade em Estoque" min="0" value="1">
+        <input id="precoCusto" placeholder="Preço de Custo (Opcional). Ex: 32.50" inputmode="decimal">
+        
         <select id="category">
           <option value="semijoias">Semijoias</option>
           <option value="perfumes">Perfumes</option>
         </select>
-        <input id="subcategory" placeholder="Subcategoria. Ex: Colares, Anéis, Natura, Eudora">
+        <input class="full" id="subcategory" placeholder="Subcategoria. Ex: Colares, Anéis, Natura, Eudora">
         <input class="full" id="photos" type="file" accept="image/*" multiple>
         <div id="previewImgs" class="previewImgs full"></div>
-        <input class="full" id="videoUrl" placeholder="Link do vídeo do produto. Ex: YouTube, Instagram, TikTok ou arquivo .mp4">
+        <input class="full" id="videoUrl" placeholder="Link do vídeo do produto. Ex: arquivo .mp4">
         <input class="full" id="videoFile" type="file" accept="video/*">
         <div id="previewVideo" class="previewVideo full"></div>
         <textarea class="full" id="shortDescription" placeholder="Descrição curta para o card do produto"></textarea>
@@ -145,19 +88,16 @@
       <div id="adminList" class="listAdmin"></div>
     </section>
   </main>
-  
+
   <script>
     const SUPABASE_URL = 'https://lzldwlppfeokgrevbjvu.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_omT8tL8IwMBZmolX_MdNSA_L4oca79k';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     const ADMIN_PASSWORD='px0507cx';
-    let editingId=null;
-    let editingImages=[];
-    let editingVideo='';
-    let localSelectedFiles=[];
+    let editingId=null; let editingImages=[]; let editingVideo=''; let localSelectedFiles=[];
     const fallbackImg='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#f3dfc6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#a87936" font-family="serif" font-size="44">Chic Mood</text></svg>`);
-    
+
     async function fetchProductsFromNuvem(){
       const { data, error } = await db.from('produtos').select('*').order('id', { ascending: false });
       if(error) { console.error(error); return []; }
@@ -167,27 +107,32 @@
     function money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
     function login(){if(document.getElementById('pass').value===ADMIN_PASSWORD){localStorage.setItem('chicMoodLogged','yes');showAdmin()}else alert('Senha incorreta')}
     function showAdmin(){document.getElementById('loginBox').style.display='none';document.getElementById('adminBox').style.display='block';renderAdmin()}
-    function clearForm(){editingId=null;editingImages=[];editingVideo='';localSelectedFiles=[];['name','price','subcategory','shortDescription','description','photos','videoUrl','videoFile'].forEach(id=>document.getElementById(id).value='');document.getElementById('category').value='semijoias';renderPreview();renderVideoPreview()}
+    
+    function clearForm(){
+      editingId=null; editingImages=[]; editingVideo=''; localSelectedFiles=[];
+      ['name','price','subcategory','shortDescription','description','photos','videoUrl','videoFile','codigo','quantidade','precoCusto'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('category').value='semijoias';
+      renderPreview(); renderVideoPreview();
+    }
+    
     function renderPreview(){document.getElementById('previewImgs').innerHTML=editingImages.map((img,i)=>`<div><img src="${img}"><br><button class="danger" onclick="removeImg(${i})">Remover</button></div>`).join('')}
     function removeImg(i){editingImages.splice(i,1);renderPreview()}
-    
+
     document.getElementById('photos').addEventListener('change', async function(){
-      const files=[...this.files];if(!files.length)return;
+      const files=[...this.files]; if(!files.length)return;
       for(const f of files){
         localSelectedFiles.push(f);
         editingImages.push(await fileToData(f));
       }
       renderPreview();
     });
-    
+
     function renderVideoPreview(){const box=document.getElementById('previewVideo');const url=document.getElementById('videoUrl').value.trim();const src=editingVideo||url;if(!src){box.innerHTML='';return}box.innerHTML=src.startsWith('data:video')||src.match(/\.(mp4|webm|ogg)(\?|$)/i)?`<video controls src="${src}"></video><br><button class="danger" onclick="removeVideo()">Remover vídeo</button>`:`<div class="videoBadge">Vídeo cadastrado</div><br><a href="${src}" target="_blank">Abrir vídeo</a><br><button class="danger" onclick="removeVideo()">Remover vídeo</button>`}
     function removeVideo(){editingVideo='';document.getElementById('videoUrl').value='';document.getElementById('videoFile').value='';renderVideoPreview()}
     document.getElementById('videoUrl').addEventListener('input',()=>{if(document.getElementById('videoUrl').value.trim())editingVideo='';renderVideoPreview()});
-    
-    document.getElementById('videoFile').addEventListener('change',async function(){const f=this.files[0];if(!f)return;if(f.size>12*1024*1024){alert('Vídeo muito pesado. Use um vídeo curto, até 12MB, ou cole um link.');this.value='';return}editingVideo=await fileToData(f);document.getElementById('videoUrl').value='';renderVideoPreview()});
-    
+    document.getElementById('videoFile').addEventListener('change',async function(){const f=this.files[0];if(!f)return;if(f.size>12*1024*1024){alert('Vídeo muito pesado. Até 12MB.');this.value='';return}editingVideo=await fileToData(f);document.getElementById('videoUrl').value='';renderVideoPreview()});
     function fileToData(file){return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file)})}
-    
+
     async function saveProduct(){
       const name=document.getElementById('name').value.trim();
       const price=parseFloat(String(document.getElementById('price').value).replace(',','.'));
@@ -197,10 +142,16 @@
       const description=document.getElementById('description').value.trim();
       const video=(editingVideo||document.getElementById('videoUrl').value.trim());
       
-      if(!name||!price){alert('Informe nome e preço.');return}
-    
+      // Captura dos novos inputs de estoque
+      const codigo=document.getElementById('codigo').value.trim()||null;
+      const quantidade=parseInt(document.getElementById('quantidade').value)||0;
+      const precoCustoRaw=document.getElementById('precoCusto').value.trim();
+      const preco_custo=precoCustoRaw ? parseFloat(precoCustoRaw.replace(',','.')) : null;
+
+      if(!name||isNaN(price)){alert('Informe nome e preço válidos.');return}
+
       let finalImages = editingImages.filter(img => !img.startsWith('data:image'));
-    
+
       if(localSelectedFiles.length > 0) {
         for(const file of localSelectedFiles) {
           const uniqueName = `${Date.now()}_${file.name}`;
@@ -208,16 +159,14 @@
           if(!error) {
             const { data: publicData } = db.storage.from('fotos-produtos').getPublicUrl(uniqueName);
             finalImages.push(publicData.publicUrl);
-          } else {
-            console.error("Erro no upload:", error);
           }
         }
       }
-    
+
       if(finalImages.length === 0) finalImages = [fallbackImg];
-    
-      const payload = { name, price, category, subcategory, shortDescription, description, images: finalImages, video };
-    
+
+      const payload = { name, price, category, subcategory, shortDescription, description, images: finalImages, video, codigo, quantidade, preco_custo };
+
       if(editingId){
         const { error } = await db.from('produtos').update(payload).eq('id', editingId);
         if(error) alert('Erro ao atualizar: ' + error.message);
@@ -225,23 +174,45 @@
         const { error } = await db.from('produtos').insert([payload]);
         if(error) alert('Erro ao cadastrar: ' + error.message);
       }
-    
+
       clearForm();
       await renderAdmin();
       alert('Produto salvo com sucesso!');
     }
-    
+
     async function editProduct(id){
       const ps = await fetchProductsFromNuvem();
-      const p=ps.find(x=>x.id===id);if(!p)return;
-      editingId=id;editingImages=[...(p.images||[])];editingVideo=p.video||'';
-      document.getElementById('name').value=p.name;document.getElementById('price').value=p.price;
-      document.getElementById('category').value=p.category;document.getElementById('subcategory').value=p.subcategory||'';
-      document.getElementById('shortDescription').value=p.shortDescription||'';document.getElementById('description').value=p.description||'';
+      const p=ps.find(x=>x.id===id); if(!p)return;
+      editingId=id; editingImages=[...(p.images||[])]; editingVideo=p.video||'';
+      document.getElementById('name').value=p.name; document.getElementById('price').value=p.price;
+      document.getElementById('category').value=p.category; document.getElementById('subcategory').value=p.subcategory||'';
+      document.getElementById('shortDescription').value=p.shortDescription||''; document.getElementById('description').value=p.description||'';
       document.getElementById('videoUrl').value=(p.video&& !p.video.startsWith('data:'))?p.video:'';
-      renderPreview();renderVideoPreview();window.scrollTo({top:0,behavior:'smooth'})
+      
+      // Carrega os novos dados de estoque no formulário
+      document.getElementById('codigo').value=p.codigo||'';
+      document.getElementById('quantidade').value=p.quantidade!==undefined?p.quantidade:0;
+      document.getElementById('precoCusto').value=p.preco_custo||'';
+      
+      renderPreview(); renderVideoPreview(); window.scrollTo({top:0,behavior:'smooth'})
     }
-    
+
+    // REGISTRAR UMA VENDA RAPIDAMENTE (-1 UNIDADE)
+    async function registrarVenda(id){
+      const ps = await fetchProductsFromNuvem();
+      const p = ps.find(x=>x.id===id);
+      if(!p) return;
+      let novaQtd = (p.quantidade || 0) - 1;
+      if(novaQtd < 0) { alert('O estoque desse produto já está zerado!'); return; }
+      
+      const { error } = await db.from('produtos').update({ quantidade: novaQtd }).eq('id', id);
+      if(!error) {
+        await renderAdmin();
+      } else {
+        alert('Erro ao registrar venda: ' + error.message);
+      }
+    }
+
     async function deleteProduct(id){
       if(confirm('Excluir este produto permanentemente da nuvem?')){
         const { error } = await db.from('produtos').delete().eq('id', id);
@@ -249,12 +220,31 @@
         else alert(error.message);
       }
     }
-    
+
     async function renderAdmin(){
       const ps= await fetchProductsFromNuvem();
-      document.getElementById('adminList').innerHTML=ps.map(p=>`<div class="adminProduct"><img src="${p.images?.[0]||fallbackImg}"><div><b>${p.name}</b><br><small>${p.category==='semijoias'?'Semijoias':'Perfumes'} • ${p.subcategory||'Sem subcategoria'} • ${p.images?.length||1} foto(s) ${p.video?'• vídeo':''}</small><br>${money(p.price)}</div><div class="prod-actions"><button class="ghost" onclick="editProduct(${p.id})">Editar</button> <button class="danger" onclick="deleteProduct(${p.id})">Excluir</button></div></div>`).join('')
+      document.getElementById('adminList').innerHTML=ps.map(p=>{
+        const qtd = p.quantidade !== undefined && p.quantidade !== null ? p.quantidade : 0;
+        const estoqueStatus = qtd === 0 ? '<b style="color:#9b2f2f">ZERADO (Fora de estoque)</b>' : `<b>${qtd} un</b>`;
+        const custoInfo = p.preco_custo ? `| Custo: ${money(p.preco_custo)}` : '';
+        const codigoInfo = p.codigo ? `Código: ${p.codigo}` : 'Sem código';
+        
+        return `<div class="adminProduct">
+          <img src="${p.images?.[0]||fallbackImg}">
+          <div>
+            <b>${p.name}</b><br>
+            <small>${p.category==='semijoias'?'Semijoias':'Perfumes'} • ${p.subcategory||'Sem subcategoria'}</small><br>
+            <small style="color:var(--gold)">${codigoInfo} | Estoque: ${estoqueStatus} ${custoInfo}</small><br>
+            <strong>${money(p.price)}</strong>
+          </div>
+          <div class="prod-actions">
+            <button class="success" onclick="registrarVenda(${p.id})">Vendido (-1)</button>
+            <button class="ghost" onclick="editProduct(${p.id})">Editar</button> 
+            <button class="danger" onclick="deleteProduct(${p.id})">Excluir</button>
+          </div>
+        </div>`
+      }).join('')
     }
-    
     if(localStorage.getItem('chicMoodLogged')==='yes') showAdmin();
   </script>
 </body>
