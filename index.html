@@ -68,7 +68,6 @@
     .details{position:relative;z-index:2;margin:4vh auto;background:#fffaf3;border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);max-width:980px;max-height:92vh;overflow:auto;padding:22px}
     .desc{white-space:pre-wrap;line-height:1.7;color:var(--muted)}
     
-    /* MODIFICAÇÕES NA GALERIA (FOTO + VÍDEO COMPACTO) */
     .detailsGrid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; }
     #mainDetailContentArea { width: 100%; height: 520px; border-radius: 22px; overflow: hidden; background: #f2e3d0; display: flex; align-items: center; justify-content: center; }
     #mainDetailContentArea img { width: 100%; height: 100%; object-fit: cover; }
@@ -79,20 +78,26 @@
     .thumbs .thumb-video { display: flex; align-items: center; justify-content: center; }
     .thumbs .thumb-video .play-icon { color: var(--gold); font-size: 28px; }
 
-    .brand-name { font-family: 'Mr De Haviland', cursive; font-size: 45px; font-weight: normal; color: var(--gold); }
+    .brand-name { font-family: 'Mr De Haviland', cursive; font-size: 45px; font-weight: normal; color: var(--gold); margin: 0; }
     .brand-logo{ height:95px!important; width:auto!important; max-width:260px!important; object-fit:contain!important; display:block!important; }
+    
+    /* CABEÇALHO PADRÃO (DESKTOP) */
     header{ height:90px!important; min-height:auto!important; padding:0px 5%!important; display: flex!important; flex-direction: row!important; justify-content:space-between!important; align-items:center!important; margin-bottom: 35px!important; }
     .brand, header> div { width: 100%!important; display: flex!important; justify-content: space-between!important; align-items: center!important; }
     
+    /* CORREÇÃO DO CABEÇALHO PARA MOBILE E TABLET */
     @media(max-width:768px){ 
       .brand-logo{ height:72px!important; max-width:220px!important; } 
-      header{ min-height:60px!important; flex-direction:column!important; gap:10px!important; margin-bottom: 20px!important; } 
+      /* Destravando a altura (height: auto) e adicionando padding para não espremer */
+      header{ height:auto!important; min-height:60px!important; flex-direction:column!important; gap:15px!important; padding: 15px 5%!important; margin-bottom: 25px!important; } 
     }
+    
     @media(max-width:760px){
       .nav{align-items:center;padding:10px 12px; flex-direction: column; gap: 12px;}
       .brand img{height:58px;max-width:190px}
-      nav{gap:12px; justify-content: center; align-items: center; width: 100%;}
-      .hero{padding:24px 16px 18px}
+      /* Garantindo que os itens de navegação quebrem linha se necessário */
+      nav{gap:15px; justify-content: center; align-items: center; width: 100%; flex-wrap: wrap;}
+      .hero{padding:10px 16px 18px}
       .brand-slogan{font-size:24px}
       .formGrid, .detailsGrid{grid-template-columns:1fr}
       .sectionTitle h2{font-size:34px}
@@ -247,7 +252,6 @@
       if(!p) return;
       const imgs = p.images?.length ? p.images : [fallbackImg];
       
-      // Validação estrita do campo de vídeo upado do banco
       const videoSrc = (p.video && String(p.video).trim() !== 'null') ? String(p.video).trim() : '';
       
       let mainContentHTML = '';
@@ -263,7 +267,6 @@
         <img class="${i === currentPhotoIndex ? 'active' : ''}" src="${img}" onclick="currentPhotoIndex=${i}; renderDetails()">
       `).join('');
       
-      // SÓ MOSTRA SE TIVER VÍDEO REAL
       if (videoSrc !== '') {
         thumbsHTML += `
           <div class="thumb-video ${currentPhotoIndex === 'video' ? 'active' : ''}" onclick="currentPhotoIndex='video'; renderDetails()">
