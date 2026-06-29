@@ -169,8 +169,9 @@
   </div>
   
   <script>
-    const SUPABASE_URL = 'https://lzldwlppfeokgrevbjvu.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_omT8tL8IwMBZmolX_MdNSA_L4oca79k';
+    // URL E CHAVE DO BANCO DE DADOS NOVO (SOHQHDIUQQWZLDGUVEIH)
+    const SUPABASE_URL = 'https://sohqhdiuqqwzldguveih.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_adE1mEzr3nGsxLKVpcsMVw_sEwxqP_R';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     const WHATSAPP = '5511976359835';
@@ -212,8 +213,12 @@
       let ps = globalProducts.filter(p => (currentCategory === 'todos' || p.category === currentCategory) && (sub === 'todos' || p.subcategory === sub));
       
       document.getElementById('productsGrid').innerHTML = ps.length ? ps.map(p => {
-        // Ativação da lógica de estoque zerado
-        const isEsgotado = p.quantidade !== undefined && p.quantidade !== null && p.quantidade <= 0;
+        
+        // LEITURA DO ESTOQUE E VERIFICAÇÃO SE TEM VÍDEO
+        const qtd = p.quantidade != null ? Number(p.quantidade) : 0;
+        const isEsgotado = qtd <= 0;
+        const hasVideo = p.video && String(p.video).trim() !== '' && String(p.video).trim() !== 'null';
+
         const labelHTML = isEsgotado ? `<div class="badge-esgotado">Fora de Estoque</div>` : '';
         const btnHTML = isEsgotado 
           ? `<button class="cartBtn btn-disabled" disabled>Fora de estoque</button>`
@@ -225,7 +230,7 @@
           <div class="info">
             <div class="cat">${p.category==='semijoias'?'Semijoias':'Perfumes'}</div>
             <h3>${p.name}</h3>
-            <div class="sub">${p.subcategory||''}${p.video && String(p.video).trim() !== '' && String(p.video).trim() !== 'null' ?' <span class="videoBadge">• vídeo</span>':''}</div>
+            <div class="sub">${p.subcategory||''}${hasVideo ?' <span class="videoBadge">• vídeo</span>':''}</div>
             <p style="color:var(--muted)">${p.shortDescription||''}</p>
             <div class="price">${money(p.price)}</div>
             ${btnHTML}
@@ -239,8 +244,11 @@
     function renderDetails(){
       const p = globalProducts.find(x => x.id === currentDetailId); if(!p) return;
       const imgs = p.images?.length ? p.images : [fallbackImg];
-      const videoSrc = (p.video && String(p.video).trim() !== 'null') ? String(p.video).trim() : '';
-      const isEsgotado = p.quantidade !== undefined && p.quantidade !== null && p.quantidade <= 0;
+      
+      // VALIDAÇÕES ESTABELECIDAS COM O NOVO BANCO
+      const videoSrc = (p.video && String(p.video).trim() !== '' && String(p.video).trim() !== 'null') ? String(p.video).trim() : '';
+      const qtd = p.quantidade != null ? Number(p.quantidade) : 0;
+      const isEsgotado = qtd <= 0;
       
       let mainContentHTML = '';
       if (currentPhotoIndex === 'video' && videoSrc !== '') {
@@ -251,6 +259,8 @@
       }
       
       let thumbsHTML = imgs.map((img, i) => `<img class="${i === currentPhotoIndex ? 'active' : ''}" src="${img}" onclick="currentPhotoIndex=${i}; renderDetails()">`).join('');
+      
+      // SÓ MOSTRA O BOTÃO DE PLAY SE EXISTIR O ARQUIVO
       if (videoSrc !== '') {
         thumbsHTML += `<div class="thumb-video ${currentPhotoIndex === 'video' ? 'active' : ''}" onclick="currentPhotoIndex='video'; renderDetails()"><span class="play-icon">▶</span></div>`;
       }
@@ -297,7 +307,9 @@
     
     function addToCart(id){
       let p = globalProducts.find(x => x.id === id);
-      if (p && p.quantidade !== undefined && p.quantidade !== null && p.quantidade <= 0) return; // Trava de segurança
+      const qtd = p.quantidade != null ? Number(p.quantidade) : 0;
+      if (qtd <= 0) return; // Trava de segurança no carrinho
+      
       let item = cart.find(i => i.id === id);
       if(item) item.qty++; else cart.push({id, qty:1});
       saveCart(); openCart();
