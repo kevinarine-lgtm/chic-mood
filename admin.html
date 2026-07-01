@@ -68,7 +68,10 @@
   <header>
     <div class="nav">
       <div class="brand">Chic Mood Dashboard</div>
-      <nav><a href="index.html">Ver loja</a></nav>
+      <nav>
+        <a href="index.html">Ver loja</a>
+        <button class="danger" style="padding: 6px 12px; font-size: 13px;" onclick="logout()">Sair</button>
+      </nav>
     </div>
   </header>
   
@@ -84,7 +87,7 @@
       
       <div style="margin-bottom: 24px;">
         <h1 style="color:var(--gold); font-style:italic; margin-bottom:4px;">Novo Produto</h1>
-        <p style="color:var(--muted); margin-top:0;">Preencha os blocos abaixo para adicionar ou editar um produto no seu catálogo.</p>
+        <p style="color:var(--muted); margin-top:0;">Preencha os blocos abaixo para adicionar ou editar um produto.</p>
       </div>
 
       <div class="card-section">
@@ -102,8 +105,12 @@
             </select>
           </div>
           <div class="field-group">
-            <label>Subcategoria / Marca</label>
-            <input id="subcategory" placeholder="Ex: Colares, Natura, Eudora...">
+            <label>Subcategoria / Gênero</label>
+            <input id="subcategory" placeholder="Ex: Feminino, Masculino, Colares...">
+          </div>
+          <div class="field-group full">
+            <label>Marca</label>
+            <input id="marca" placeholder="Ex: Natura, Eudora, Chic Mood...">
           </div>
         </div>
       </div>
@@ -113,7 +120,7 @@
         
         <div class="field-group full" style="margin-bottom: 16px;">
           <label>Variações de Tamanho / Preço (Ex: Perfumes com diferentes ml)</label>
-          <p style="font-size:13px; color:var(--muted); margin:0 0 10px 0;">Se o produto tem variações (ex: 50ml, 100ml), adicione aqui. O preço principal e estoque abaixo serão ignorados, pois o sistema usará os valores destas variações.</p>
+          <p style="font-size:13px; color:var(--muted); margin:0 0 10px 0;">Se o produto tem variações (ex: 50ml, 100ml), adicione aqui. O preço principal e estoque abaixo serão ignorados.</p>
           
           <div id="variacoesList"></div>
           
@@ -204,7 +211,7 @@
     
     const ADMIN_PASSWORD='px0507cx';
     let editingId=null; let editingImages=[]; let editingVideo=''; let localSelectedFiles=[];
-    let productVariacoes = []; // Guarda as variações de tamanho
+    let productVariacoes = []; 
 
     const fallbackImg='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#f3dfc6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#a87936" font-family="serif" font-size="44">Chic Mood</text></svg>`);
 
@@ -216,9 +223,9 @@
     
     function money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
     function login(){if(document.getElementById('pass').value===ADMIN_PASSWORD){localStorage.setItem('chicMoodLogged','yes');showAdmin()}else alert('Senha incorreta')}
+    function logout(){localStorage.removeItem('chicMoodLogged');location.reload();}
     function showAdmin(){document.getElementById('loginBox').style.display='none';document.getElementById('adminBox').style.display='block';renderAdmin()}
     
-    // SISTEMA DE VARIAÇÕES
     function renderVariacoes() {
       const box = document.getElementById('variacoesList');
       box.innerHTML = productVariacoes.map((v, i) => `
@@ -242,14 +249,11 @@
       document.getElementById('varQtd').value = '';
       renderVariacoes();
     }
-    function removeVariacao(index) {
-      productVariacoes.splice(index, 1);
-      renderVariacoes();
-    }
+    function removeVariacao(index) { productVariacoes.splice(index, 1); renderVariacoes(); }
 
     function clearForm(){
       editingId=null; editingImages=[]; editingVideo=''; localSelectedFiles=[]; productVariacoes=[];
-      ['name','price','subcategory','shortDescription','description','photos','videoUrl','videoFile','codigo','quantidade','precoCusto'].forEach(id=>document.getElementById(id).value='');
+      ['name','price','subcategory','marca','shortDescription','description','photos','videoUrl','videoFile','codigo','quantidade','precoCusto'].forEach(id=>document.getElementById(id).value='');
       document.getElementById('category').value='semijoias';
       document.getElementById('quantidade').value='1';
       renderPreview(); renderVideoPreview(); renderVariacoes();
@@ -283,7 +287,8 @@
       const name=document.getElementById('name').value.trim();
       let price=parseFloat(String(document.getElementById('price').value).replace(',','.'));
       const category=document.getElementById('category').value;
-      const subcategory=document.getElementById('subcategory').value.trim()||'Sem subcategoria';
+      const subcategory=document.getElementById('subcategory').value.trim()||'';
+      const marca=document.getElementById('marca').value.trim()||'';
       const shortDescription=document.getElementById('shortDescription').value.trim();
       const description=document.getElementById('description').value.trim();
       const video=(editingVideo||document.getElementById('videoUrl').value.trim());
@@ -293,13 +298,10 @@
       const precoCustoRaw=document.getElementById('precoCusto').value.trim();
       const preco_custo=precoCustoRaw ? parseFloat(precoCustoRaw.replace(',','.')) : null;
 
-      // Se tiver variações, ignora o preço base vazio. Se não tiver, valida o preço base.
       if (!name || (productVariacoes.length === 0 && isNaN(price))) {
         alert('Erro: Informe um nome e o preço (ou adicione variações de tamanho).');
         return;
       }
-      
-      // Padroniza valores base caso o cliente foque apenas nas variações
       if(isNaN(price)) price = 0;
 
       let finalImages = editingImages.filter(img => !img.startsWith('data:image'));
@@ -314,11 +316,9 @@
           }
         }
       }
-
       if(finalImages.length === 0) finalImages = [fallbackImg];
 
-      // O campo "variacoes" precisa existir na sua tabela "produtos" (Tipo: jsonb)
-      const payload = { name, price, category, subcategory, shortDescription, description, images: finalImages, video, codigo, quantidade, preco_custo, variacoes: productVariacoes };
+      const payload = { name, price, category, subcategory, marca, shortDescription, description, images: finalImages, video, codigo, quantidade, preco_custo, variacoes: productVariacoes };
 
       if(editingId){
         const { error } = await db.from('produtos').update(payload).eq('id', editingId);
@@ -343,6 +343,7 @@
       document.getElementById('price').value=p.price;
       document.getElementById('category').value=p.category; 
       document.getElementById('subcategory').value=p.subcategory||'';
+      document.getElementById('marca').value=p.marca||'';
       document.getElementById('shortDescription').value=p.shortDescription||''; 
       document.getElementById('description').value=p.description||'';
       document.getElementById('videoUrl').value=(p.video&& !p.video.startsWith('data:'))?p.video:'';
@@ -384,7 +385,6 @@
       document.getElementById('totalCount').innerText = `${ps.length} itens cadastrados`;
       
       document.getElementById('adminList').innerHTML=ps.map(p=>{
-        
         let infoEstoquePreco = '';
         const temVar = p.variacoes && p.variacoes.length > 0;
         
@@ -406,12 +406,14 @@
 
         const custoInfo = p.preco_custo ? `<br><small style="color:var(--muted)">Custo Ref: ${money(p.preco_custo)}</small>` : '';
         const codigoInfo = p.codigo ? `<small style="background:#e5dbcf; padding:2px 6px; border-radius:4px; font-size:12px; margin-bottom:6px; display:inline-block;">Ref: ${p.codigo}</small><br>` : '';
+        const marcaInfo = p.marca ? ` • ${p.marca}` : '';
         
         return `<div class="adminProduct">
           <img src="${p.images?.[0]||fallbackImg}">
           <div>
             ${codigoInfo}
             <h3 style="margin:0 0 4px 0; font-size:18px;">${p.name}</h3>
+            <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">${p.subcategory||''}${marcaInfo}</div>
             ${infoEstoquePreco}
             ${custoInfo}
           </div>
