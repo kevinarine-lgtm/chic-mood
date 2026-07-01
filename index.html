@@ -37,10 +37,14 @@
     .chip.active{background:var(--gold);color:#fff}
     select{min-width:200px}
     
-    /* Estilo do Banner de Encomenda de Perfumes */
-    .perfume-order-banner { display: none; max-width: 600px; margin: -10px auto 25px; padding: 16px 20px; background: rgba(255, 253, 248, 0.9); border: 1px dashed var(--gold); border-radius: 16px; text-align: center; font-size: 15px; color: var(--text); line-height: 1.5; box-shadow: 0 4px 15px rgba(168,121,54,0.05); }
-    .perfume-order-banner a { color: var(--gold); font-weight: bold; text-decoration: underline; transition: 0.2s; }
-    .perfume-order-banner a:hover { color: var(--gold2); }
+    /* BOTÃO FLUTUANTE ESTILO BOT DO WHATSAPP (Aparece na esquerda) */
+    .whatsapp-bot-float { display: none; position: fixed; bottom: 24px; left: 24px; z-index: 99; background: #25d366; color: #fff; text-decoration: none; padding: 12px 18px; border-radius: 999px; font-weight: bold; font-size: 14px; align-items: center; gap: 8px; box-shadow: 0 8px 24px rgba(37, 211, 102, 0.3); transition: transform 0.2s, background-color 0.2s; animation: pulseBot 2s infinite; }
+    .whatsapp-bot-float:hover { transform: scale(1.05); background: #20ba5a; }
+    @keyframes pulseBot { 
+      0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); } 
+      70% { box-shadow: 0 0 0 12px rgba(37, 211, 102, 0); } 
+      100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } 
+    }
 
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
     .product{position:relative; background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 14px 28px rgba(89,55,24,.08);cursor:pointer;transition:.2s; display:flex; flex-direction:column}
@@ -105,6 +109,7 @@
       .sectionTitle h2{font-size:34px}
       #mainDetailContentArea {height: 360px;}
       .cart{width:96vw}
+      .whatsapp-bot-float { bottom: 16px; left: 16px; padding: 10px 14px; font-size: 13px; }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -151,13 +156,16 @@
         </select>
       </div>
 
-      <div id="perfumeCustomBanner" class="perfume-order-banner">
-        💌 <b>Encomendas Especiais:</b> Procura por um perfume específico? Fale com a gente através do nosso <a href="https://wa.me/5511976359835?text=Ol%C3%A1%21%20Gostaria%20de%20consultar%20o%20pre%C3%A7o%20e%20a%20disponibilidade%20de%20um%20perfume%20espec%C3%ADfico." target="_blank">WhatsApp clicando aqui</a> para consultar preços e encomendar a fragrância que combina com você.
-      </div>
-
       <div id="productsGrid" class="grid"></div>
     </section>
   </main>
+
+  <a id="perfumeCustomBot" href="https://wa.me/5511976359835?text=Ol%C3%A1%21%20Gostaria%20de%20consultar%20o%20pre%C3%A7o%20e%20a%20disponibilidade%20de%20um%20perfume%20espec%C3%ADfico." target="_blank" class="whatsapp-bot-float">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+      <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.925h.004c4.368 0 7.926-3.559 7.93-7.93a7.9 7.9 0 0 0-2.327-5.615zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
+    </svg>
+    Encomendas Especiais
+  </a>
   
   <div id="cartDrawer" class="drawer">
     <div class="overlay" onclick="closeCart()"></div>
@@ -217,12 +225,12 @@
       currentCategory = cat;
       document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
       
-      // Controla a exibição inteligente do banner de encomendas de perfumes
-      const banner = document.getElementById('perfumeCustomBanner');
+      // Mostra o botão estilo "bot" apenas se o usuário clicar na aba de Perfumes
+      const botFlutuante = document.getElementById('perfumeCustomBot');
       if (cat === 'perfumes') {
-        banner.style.display = 'block';
+        botFlutuante.style.display = 'inline-flex';
       } else {
-        banner.style.display = 'none';
+        botFlutuante.style.display = 'none';
       }
       
       await updateFilters(); await renderProducts();
