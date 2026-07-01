@@ -34,8 +34,14 @@
     
     .field-group {display: flex; flex-direction: column; gap: 6px;}
     .field-group label {font-size: 13px; color: var(--gold); font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
-    .admin input, .admin select, .admin textarea{width:100%;border:1px solid var(--line);background:#fffaf3;color:var(--text);border-radius:12px;padding:12px 16px;font-size:15px; font-family:inherit;}
-    .admin textarea{min-height:90px; resize:vertical;}
+    .admin input, .admin select {width:100%;border:1px solid var(--line);background:#fffaf3;color:var(--text);border-radius:12px;padding:12px 16px;font-size:15px; font-family:inherit;}
+    
+    /* EDITOR DE TEXTO CUSTOMIZADO */
+    .editor-toolbar { display: flex; gap: 6px; background: #fffaf3; border: 1px solid var(--line); border-bottom: none; border-radius: 12px 12px 0 0; padding: 8px 12px; }
+    .editor-toolbar button { background: #fff; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; padding: 4px 10px; font-size: 15px; color: var(--gold); font-family: inherit; transition: 0.2s;}
+    .editor-toolbar button:hover { background: var(--gold); color: #fff; }
+    .editor-box { width: 100%; min-height: 90px; border: 1px solid var(--line); background: #fffaf3; color: var(--text); border-radius: 0 0 12px 12px; padding: 12px 16px; font-size: 15px; font-family: inherit; outline: none; }
+    .editor-box:empty:before { content: attr(data-placeholder); color: #a99c92; pointer-events: none; display: block; }
     
     .previewImgs{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
     .previewImgs img{width:80px;height:80px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
@@ -180,14 +186,27 @@
       <div class="card-section">
         <h3>4. Descrições</h3>
         <div class="formGrid">
+          
           <div class="field-group full">
             <label>Descrição Curta (Aparece no card)</label>
-            <textarea id="shortDescription" placeholder="Resumo do produto..."></textarea>
+            <div class="editor-toolbar">
+              <button type="button" onclick="formatText('bold')" title="Negrito"><b>B</b></button>
+              <button type="button" onclick="formatText('italic')" title="Itálico"><i>I</i></button>
+              <button type="button" onclick="formatText('underline')" title="Sublinhado"><u>U</u></button>
+            </div>
+            <div id="shortDescription" class="editor-box" contenteditable="true" data-placeholder="Resumo do produto..."></div>
           </div>
+          
           <div class="field-group full">
             <label>Descrição Completa (Aparece na página do produto)</label>
-            <textarea id="description" placeholder="Detalhes, medidas, composição..."></textarea>
+            <div class="editor-toolbar">
+              <button type="button" onclick="formatText('bold')" title="Negrito"><b>B</b></button>
+              <button type="button" onclick="formatText('italic')" title="Itálico"><i>I</i></button>
+              <button type="button" onclick="formatText('underline')" title="Sublinhado"><u>U</u></button>
+            </div>
+            <div id="description" class="editor-box" contenteditable="true" data-placeholder="Detalhes, medidas, composição..."></div>
           </div>
+
         </div>
       </div>
 
@@ -226,6 +245,11 @@
     function logout(){localStorage.removeItem('chicMoodLogged');location.reload();}
     function showAdmin(){document.getElementById('loginBox').style.display='none';document.getElementById('adminBox').style.display='block';renderAdmin()}
     
+    // FUNÇÃO PARA FORMATAR TEXTO (B, I, U)
+    function formatText(command) {
+      document.execCommand(command, false, null);
+    }
+
     function renderVariacoes() {
       const box = document.getElementById('variacoesList');
       box.innerHTML = productVariacoes.map((v, i) => `
@@ -253,7 +277,12 @@
 
     function clearForm(){
       editingId=null; editingImages=[]; editingVideo=''; localSelectedFiles=[]; productVariacoes=[];
-      ['name','price','subcategory','marca','shortDescription','description','photos','videoUrl','videoFile','codigo','quantidade','precoCusto'].forEach(id=>document.getElementById(id).value='');
+      ['name','price','subcategory','marca','photos','videoUrl','videoFile','codigo','quantidade','precoCusto'].forEach(id=>document.getElementById(id).value='');
+      
+      // Limpa os editores visuais
+      document.getElementById('shortDescription').innerHTML = '';
+      document.getElementById('description').innerHTML = '';
+      
       document.getElementById('category').value='semijoias';
       document.getElementById('quantidade').value='1';
       renderPreview(); renderVideoPreview(); renderVariacoes();
@@ -289,10 +318,12 @@
       const category=document.getElementById('category').value;
       const subcategory=document.getElementById('subcategory').value.trim()||'';
       const marca=document.getElementById('marca').value.trim()||'';
-      const shortDescription=document.getElementById('shortDescription').value.trim();
-      const description=document.getElementById('description').value.trim();
-      const video=(editingVideo||document.getElementById('videoUrl').value.trim());
       
+      // Agora pegamos o HTML formatado gerado pelo editor
+      const shortDescription = document.getElementById('shortDescription').innerHTML.trim();
+      const description = document.getElementById('description').innerHTML.trim();
+      
+      const video=(editingVideo||document.getElementById('videoUrl').value.trim());
       const codigo=document.getElementById('codigo').value.trim()||null;
       let quantidade=parseInt(document.getElementById('quantidade').value)||0;
       const precoCustoRaw=document.getElementById('precoCusto').value.trim();
@@ -344,8 +375,11 @@
       document.getElementById('category').value=p.category; 
       document.getElementById('subcategory').value=p.subcategory||'';
       document.getElementById('marca').value=p.marca||'';
-      document.getElementById('shortDescription').value=p.shortDescription||''; 
-      document.getElementById('description').value=p.description||'';
+      
+      // Preenche os editores visuais
+      document.getElementById('shortDescription').innerHTML=p.shortDescription||''; 
+      document.getElementById('description').innerHTML=p.description||'';
+      
       document.getElementById('videoUrl').value=(p.video&& !p.video.startsWith('data:'))?p.video:'';
       document.getElementById('codigo').value=p.codigo||'';
       document.getElementById('quantidade').value=p.quantidade!==undefined?p.quantidade:0;
