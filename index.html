@@ -35,7 +35,7 @@
     .chip,select,input,textarea{border:1px solid var(--line);background:#fffaf3;color:var(--text);border-radius:999px;padding:12px 16px;font-size:15px}
     .chip{cursor:pointer}
     .chip.active{background:var(--gold);color:#fff}
-    select{min-width:220px}
+    select{min-width:200px}
     
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
     .product{position:relative; background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 14px 28px rgba(89,55,24,.08);cursor:pointer;transition:.2s}
@@ -131,12 +131,21 @@
   <main class="wrap">
     <section id="produtos" class="panel">
       <div class="sectionTitle"><div class="small">Coleção</div><h2>Produtos</h2></div>
+      
       <div class="filters">
         <button class="chip active" data-cat="todos" onclick="setCategory('todos')">Todos</button>
         <button class="chip" data-cat="semijoias" onclick="setCategory('semijoias')">Semijoias</button>
         <button class="chip" data-cat="perfumes" onclick="setCategory('perfumes')">Perfumes</button>
-        <select id="subFilter" onchange="renderProducts()"><option value="todos">Todas as subcategorias</option></select>
+        
+        <select id="subFilter" onchange="renderProducts()">
+          <option value="todos">Todos os Gêneros/Linhas</option>
+        </select>
+        
+        <select id="marcaFilter" onchange="renderProducts()">
+          <option value="todos">Todas as Marcas</option>
+        </select>
       </div>
+
       <div id="productsGrid" class="grid"></div>
     </section>
   </main>
@@ -177,9 +186,8 @@
     
     const WHATSAPP = '5511976359835';
     let currentCategory = 'todos'; let shipping = 0; let currentPhotoIndex = 0; let currentDetailId = null;
-    let currentVarIndex = null; // Guarda o tamanho selecionado no momento
+    let currentVarIndex = null;
 
-    // Mudamos a chave do carrinho para V4 para evitar conflito com dados velhos do cliente
     let cart = JSON.parse(localStorage.getItem('chicMoodCartV4')||'[]');
     let globalProducts = [];
     const fallbackImg = 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#f3dfc6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#a87936" font-family="serif" font-size="44">Chic Mood</text></svg>`);
@@ -199,31 +207,45 @@
     async function setCategory(cat){
       currentCategory = cat;
       document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
-      await updateSubFilter(); await renderProducts();
+      await updateFilters(); await renderProducts();
       document.getElementById('produtos').scrollIntoView({behavior:'smooth'})
     }
     
-    async function updateSubFilter(){
-      const sel = document.getElementById('subFilter'); const old = sel.value;
+    async function updateFilters(){
+      const subSel = document.getElementById('subFilter'); const oldSub = subSel.value;
+      const marcaSel = document.getElementById('marcaFilter'); const oldMarca = marcaSel.value;
+      
       if(globalProducts.length === 0) globalProducts = await fetchProductsFromNuvem();
       let ps = globalProducts.filter(p => currentCategory === 'todos' || p.category === currentCategory);
-      let subs = [...new Set(ps.map(p => p.subcategory || 'Sem subcategoria'))].sort();
-      sel.innerHTML = '<option value="todos">Todas as subcategorias</option>' + subs.map(s => `<option value="${s}">${s}</option>`).join('');
-      if(subs.includes(old)) sel.value = old;
+      
+      // Filtro de Gênero/Linha
+      let subs = [...new Set(ps.map(p => p.subcategory).filter(Boolean))].sort();
+      subSel.innerHTML = '<option value="todos">Todos os Gêneros/Linhas</option>' + subs.map(s => `<option value="${s}">${s}</option>`).join('');
+      if(subs.includes(oldSub)) subSel.value = oldSub;
+
+      // Filtro de Marcas
+      let marcas = [...new Set(ps.map(p => p.marca).filter(Boolean))].sort();
+      marcaSel.innerHTML = '<option value="todos">Todas as Marcas</option>' + marcas.map(m => `<option value="${m}">${m}</option>`).join('');
+      if(marcas.includes(oldMarca)) marcaSel.value = oldMarca;
     }
     
     async function renderProducts(){
       const sub = document.getElementById('subFilter').value;
+      const marca = document.getElementById('marcaFilter').value;
+      
       if(globalProducts.length === 0) globalProducts = await fetchProductsFromNuvem();
-      let ps = globalProducts.filter(p => (currentCategory === 'todos' || p.category === currentCategory) && (sub === 'todos' || p.subcategory === sub));
+      
+      let ps = globalProducts.filter(p => 
+        (currentCategory === 'todos' || p.category === currentCategory) && 
+        (sub === 'todos' || p.subcategory === sub) &&
+        (marca === 'todos' || p.marca === marca)
+      );
       
       document.getElementById('productsGrid').innerHTML = ps.length ? ps.map(p => {
-        
         const hasVar = p.variacoes && p.variacoes.length > 0;
         let displayPrice = '';
         let isEsgotado = false;
         
-        // Verifica preço e estoque dependendo se tem variação ou não
         if(hasVar) {
           const totalEstoqueVar = p.variacoes.reduce((acc, v) => acc + (Number(v.quantidade)||0), 0);
           isEsgotado = totalEstoqueVar <= 0;
@@ -240,26 +262,28 @@
           ? `<button class="cartBtn btn-disabled" disabled>Fora de estoque</button>`
           : `<button class="primary" onclick="event.stopPropagation();openDetails(${p.id})">${hasVar ? 'Ver Tamanhos' : 'Adicionar ao carrinho'}</button>`;
         
+        const subText = p.subcategory || '';
+        const marcaText = p.marca ? (subText ? ' • ' + p.marca : p.marca) : '';
+        
         return `<article class="product" onclick="openDetails(${p.id})">
           ${labelHTML}
           <img src="${p.images?.[0]||fallbackImg}">
           <div class="info">
             <div class="cat">${p.category==='semijoias'?'Semijoias':'Perfumes'}</div>
             <h3>${p.name}</h3>
-            <div class="sub">${p.subcategory||''}${hasVideo ?' <span class="videoBadge">• vídeo</span>':''}</div>
+            <div class="sub">${subText}${marcaText}${hasVideo ?' <span class="videoBadge">• vídeo</span>':''}</div>
             <p style="color:var(--muted)">${p.shortDescription||''}</p>
             <div class="price">${displayPrice}</div>
             ${btnHTML}
           </div>
         </article>`
-      }).join('') : '<div class="empty">Nenhum produto encontrado.</div>';
+      }).join('') : '<div class="empty">Nenhum produto encontrado com estes filtros.</div>';
     }
     
     function openDetails(id){ 
       currentDetailId = id; 
       currentPhotoIndex = 0; 
       
-      // Define a primeira variação em estoque como selecionada
       const p = globalProducts.find(x => x.id === id);
       currentVarIndex = null;
       if(p && p.variacoes && p.variacoes.length > 0) {
@@ -286,7 +310,6 @@
       let isEsgotado = false;
       let precoFinalHTML = money(p.price);
       
-      // Controle de Tamanhos / Variações
       let variacoesHTML = '';
       if(hasVar) {
         const selectedVar = p.variacoes[currentVarIndex];
@@ -340,6 +363,9 @@
         `;
       }
       
+      const subText = p.subcategory || '';
+      const marcaText = p.marca ? (subText ? ' • ' + p.marca : p.marca) : '';
+
       document.getElementById('detailsContent').innerHTML = `
         <div class="detailsGrid">
           <div>
@@ -347,7 +373,7 @@
             <div class="thumbs">${thumbsHTML}</div>
           </div>
           <div>
-            <div class="cat">${p.category === 'semijoias' ? 'Semijoias' : 'Perfumes'} • ${p.subcategory || ''}</div>
+            <div class="cat">${p.category === 'semijoias' ? 'Semijoias' : 'Perfumes'} • ${subText}${marcaText}</div>
             <h2>${p.name}</h2>
             ${p.codigo ? `<small style="color:var(--muted); display:block; margin-top:-6px; margin-bottom:10px;">Ref: ${p.codigo}</small>` : ''}
             <div class="price" style="font-size:28px;">${precoFinalHTML}</div>
@@ -383,7 +409,6 @@
          if((Number(p.quantidade) || 0) <= 0) return; 
       }
       
-      // Se tiver variação, armazena o índice dela junto no carrinho
       let cartKey = id + (currentVarIndex !== null ? `_var_${currentVarIndex}` : '');
       
       let item = cart.find(i => i.cartKey === cartKey);
@@ -449,7 +474,7 @@
       renderCart();
     }
     
-    async function init(){ await updateSubFilter(); await renderProducts(); renderCart(); }
+    async function init(){ await updateFilters(); await renderProducts(); renderCart(); }
     init();
   </script>
 </body>
