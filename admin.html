@@ -27,13 +27,11 @@
     .wrap{max-width:1180px;margin:0 auto;padding:20px}
     .panel{background:rgba(255,253,248,.72);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:28px}
     
-    /* ORGANIZAÇÃO DOS BLOCOS DO FORMULÁRIO */
     .card-section {background:#fff; border:1px solid var(--line); border-radius:18px; padding:20px; margin-bottom:20px; box-shadow:0 4px 10px rgba(0,0,0,0.02);}
     .card-section h3 {margin-top:0; color:var(--gold); font-size:18px; margin-bottom:16px; font-style:italic; border-bottom:1px solid var(--line); padding-bottom:10px;}
     .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
     .formGrid .full{grid-column:1/-1}
     
-    /* ESTILO DOS CAMPOS */
     .field-group {display: flex; flex-direction: column; gap: 6px;}
     .field-group label {font-size: 13px; color: var(--gold); font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
     .admin input, .admin select, .admin textarea{width:100%;border:1px solid var(--line);background:#fffaf3;color:var(--text);border-radius:12px;padding:12px 16px;font-size:15px; font-family:inherit;}
@@ -43,13 +41,16 @@
     .previewImgs img{width:80px;height:80px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
     .previewVideo video{max-width:100%;max-height:200px;border-radius:12px;border:1px solid var(--line); margin-top:10px;}
     
-    /* LISTA DE PRODUTOS */
     .listAdmin{display:grid;gap:16px;margin-top:10px}
     .adminProduct{display:grid;grid-template-columns:86px 1fr auto;gap:16px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 4px 10px rgba(0,0,0,0.035)}
     .adminProduct img{width:86px;height:86px;min-width:86px;max-width:86px;object-fit:cover;border-radius:14px;display:block}
     .adminProduct .prod-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     .header-lista {display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:20px; margin-top:40px;}
     .header-lista h2 {margin:0; color:var(--gold); font-style:italic;}
+    
+    /* VARIATIONS STYLES */
+    .var-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; padding: 10px; background: #fbf6f0; border: 1px solid var(--line); border-radius: 12px; }
+    .var-row input { padding: 8px 12px; }
     
     @media(max-width:760px){
       .nav{align-items:flex-start}.brand{font-size:28px}nav{gap:8px}
@@ -58,6 +59,7 @@
       .adminProduct img{width:120px;height:120px;min-width:120px;max-width:120px}
       .adminProduct .prod-actions{width:100%;justify-content:center;margin-top:12px}
       .header-lista {flex-direction: column; gap: 10px; text-align:center;}
+      .var-row { flex-direction: column; }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -90,7 +92,7 @@
         <div class="formGrid">
           <div class="field-group full">
             <label>Nome do Produto</label>
-            <input id="name" placeholder="Ex: Colar Gota Cravejada">
+            <input id="name" placeholder="Ex: Eudora Velvet">
           </div>
           <div class="field-group">
             <label>Categoria Principal</label>
@@ -108,10 +110,31 @@
 
       <div class="card-section">
         <h3>2. Valores e Controle de Estoque</h3>
+        
+        <div class="field-group full" style="margin-bottom: 16px;">
+          <label>Variações de Tamanho / Preço (Ex: Perfumes com diferentes ml)</label>
+          <p style="font-size:13px; color:var(--muted); margin:0 0 10px 0;">Se o produto tem variações (ex: 50ml, 100ml), adicione aqui. O preço principal e estoque abaixo serão ignorados, pois o sistema usará os valores destas variações.</p>
+          
+          <div id="variacoesList"></div>
+          
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <input id="varNome" placeholder="Tamanho (Ex: 50ml)" style="flex:1; min-width:120px;">
+            <input id="varPreco" placeholder="Preço (Ex: 89.90)" inputmode="decimal" style="flex:1; min-width:120px;">
+            <input id="varQtd" type="number" placeholder="Estoque" style="flex:1; min-width:100px;">
+            <button class="ghost" type="button" onclick="addVariacao()">+ Adicionar Tamanho</button>
+          </div>
+        </div>
+
+        <hr style="border:0; border-top:1px dashed var(--line); margin: 20px 0;">
+
         <div class="formGrid">
           <div class="field-group">
-            <label>Preço de Venda (R$)</label>
+            <label>Preço Padrão (R$)</label>
             <input id="price" placeholder="Ex: 89.90" inputmode="decimal">
+          </div>
+          <div class="field-group">
+            <label>Estoque Padrão</label>
+            <input id="quantidade" type="number" placeholder="Ex: 5" min="0" value="1">
           </div>
           <div class="field-group">
             <label>Preço de Custo (Opcional)</label>
@@ -120,10 +143,6 @@
           <div class="field-group">
             <label>Código Interno (Ref)</label>
             <input id="codigo" placeholder="Ex: CM-001">
-          </div>
-          <div class="field-group">
-            <label>Quantidade em Estoque</label>
-            <input id="quantidade" type="number" placeholder="Ex: 5" min="0" value="1">
           </div>
         </div>
       </div>
@@ -179,13 +198,14 @@
   </main>
 
   <script>
-    // CHAVES ATUALIZADAS
     const SUPABASE_URL = 'https://sohqhdiuqqwzldguveih.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_adE1mEzr3nGsxLKVpcsMVw_sEwxqP_R';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     const ADMIN_PASSWORD='px0507cx';
     let editingId=null; let editingImages=[]; let editingVideo=''; let localSelectedFiles=[];
+    let productVariacoes = []; // Guarda as variações de tamanho
+
     const fallbackImg='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#f3dfc6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#a87936" font-family="serif" font-size="44">Chic Mood</text></svg>`);
 
     async function fetchProductsFromNuvem(){
@@ -198,12 +218,41 @@
     function login(){if(document.getElementById('pass').value===ADMIN_PASSWORD){localStorage.setItem('chicMoodLogged','yes');showAdmin()}else alert('Senha incorreta')}
     function showAdmin(){document.getElementById('loginBox').style.display='none';document.getElementById('adminBox').style.display='block';renderAdmin()}
     
+    // SISTEMA DE VARIAÇÕES
+    function renderVariacoes() {
+      const box = document.getElementById('variacoesList');
+      box.innerHTML = productVariacoes.map((v, i) => `
+        <div class="var-row">
+          <strong>${v.nome}</strong> 
+          <span>• ${money(v.preco)}</span> 
+          <span style="background:#eaf4ec; color:#2e6a39; padding:2px 6px; border-radius:4px; font-size:12px;">Estoque: ${v.quantidade}</span>
+          <button type="button" class="danger" style="padding:4px 8px; font-size:11px; margin-left:auto;" onclick="removeVariacao(${i})">Remover</button>
+        </div>
+      `).join('');
+    }
+    function addVariacao() {
+      const nome = document.getElementById('varNome').value.trim();
+      const preco = parseFloat(document.getElementById('varPreco').value.replace(',', '.'));
+      const qtd = parseInt(document.getElementById('varQtd').value) || 0;
+      if (!nome || isNaN(preco)) { alert('Preencha o tamanho e o preço corretamente.'); return; }
+      
+      productVariacoes.push({ nome, preco, quantidade: qtd });
+      document.getElementById('varNome').value = '';
+      document.getElementById('varPreco').value = '';
+      document.getElementById('varQtd').value = '';
+      renderVariacoes();
+    }
+    function removeVariacao(index) {
+      productVariacoes.splice(index, 1);
+      renderVariacoes();
+    }
+
     function clearForm(){
-      editingId=null; editingImages=[]; editingVideo=''; localSelectedFiles=[];
+      editingId=null; editingImages=[]; editingVideo=''; localSelectedFiles=[]; productVariacoes=[];
       ['name','price','subcategory','shortDescription','description','photos','videoUrl','videoFile','codigo','quantidade','precoCusto'].forEach(id=>document.getElementById(id).value='');
       document.getElementById('category').value='semijoias';
       document.getElementById('quantidade').value='1';
-      renderPreview(); renderVideoPreview();
+      renderPreview(); renderVideoPreview(); renderVariacoes();
     }
     
     function renderPreview(){document.getElementById('previewImgs').innerHTML=editingImages.map((img,i)=>`<div><img src="${img}"><br><button class="danger" style="padding:4px 8px; font-size:11px; margin-top:4px;" onclick="removeImg(${i})">X Remover</button></div>`).join('')}
@@ -232,7 +281,7 @@
 
     async function saveProduct(){
       const name=document.getElementById('name').value.trim();
-      const price=parseFloat(String(document.getElementById('price').value).replace(',','.'));
+      let price=parseFloat(String(document.getElementById('price').value).replace(',','.'));
       const category=document.getElementById('category').value;
       const subcategory=document.getElementById('subcategory').value.trim()||'Sem subcategoria';
       const shortDescription=document.getElementById('shortDescription').value.trim();
@@ -240,11 +289,18 @@
       const video=(editingVideo||document.getElementById('videoUrl').value.trim());
       
       const codigo=document.getElementById('codigo').value.trim()||null;
-      const quantidade=parseInt(document.getElementById('quantidade').value)||0;
+      let quantidade=parseInt(document.getElementById('quantidade').value)||0;
       const precoCustoRaw=document.getElementById('precoCusto').value.trim();
       const preco_custo=precoCustoRaw ? parseFloat(precoCustoRaw.replace(',','.')) : null;
 
-      if(!name||isNaN(price)){alert('Erro: Informe um nome e um preço de venda válido.');return}
+      // Se tiver variações, ignora o preço base vazio. Se não tiver, valida o preço base.
+      if (!name || (productVariacoes.length === 0 && isNaN(price))) {
+        alert('Erro: Informe um nome e o preço (ou adicione variações de tamanho).');
+        return;
+      }
+      
+      // Padroniza valores base caso o cliente foque apenas nas variações
+      if(isNaN(price)) price = 0;
 
       let finalImages = editingImages.filter(img => !img.startsWith('data:image'));
 
@@ -261,7 +317,8 @@
 
       if(finalImages.length === 0) finalImages = [fallbackImg];
 
-      const payload = { name, price, category, subcategory, shortDescription, description, images: finalImages, video, codigo, quantidade, preco_custo };
+      // O campo "variacoes" precisa existir na sua tabela "produtos" (Tipo: jsonb)
+      const payload = { name, price, category, subcategory, shortDescription, description, images: finalImages, video, codigo, quantidade, preco_custo, variacoes: productVariacoes };
 
       if(editingId){
         const { error } = await db.from('produtos').update(payload).eq('id', editingId);
@@ -280,22 +337,32 @@
       const ps = await fetchProductsFromNuvem();
       const p=ps.find(x=>x.id===id); if(!p)return;
       editingId=id; editingImages=[...(p.images||[])]; editingVideo=p.video||'';
+      productVariacoes = p.variacoes || [];
       
-      document.getElementById('name').value=p.name; document.getElementById('price').value=p.price;
-      document.getElementById('category').value=p.category; document.getElementById('subcategory').value=p.subcategory||'';
-      document.getElementById('shortDescription').value=p.shortDescription||''; document.getElementById('description').value=p.description||'';
+      document.getElementById('name').value=p.name; 
+      document.getElementById('price').value=p.price;
+      document.getElementById('category').value=p.category; 
+      document.getElementById('subcategory').value=p.subcategory||'';
+      document.getElementById('shortDescription').value=p.shortDescription||''; 
+      document.getElementById('description').value=p.description||'';
       document.getElementById('videoUrl').value=(p.video&& !p.video.startsWith('data:'))?p.video:'';
       document.getElementById('codigo').value=p.codigo||'';
       document.getElementById('quantidade').value=p.quantidade!==undefined?p.quantidade:0;
       document.getElementById('precoCusto').value=p.preco_custo||'';
       
-      renderPreview(); renderVideoPreview(); window.scrollTo({top:0,behavior:'smooth'})
+      renderPreview(); renderVideoPreview(); renderVariacoes(); window.scrollTo({top:0,behavior:'smooth'})
     }
 
     async function registrarVenda(id){
       const ps = await fetchProductsFromNuvem();
       const p = ps.find(x=>x.id===id);
       if(!p) return;
+      
+      if(p.variacoes && p.variacoes.length > 0) {
+        alert('Este produto possui variações de tamanho (ML). Por favor, clique em "Editar" para diminuir o estoque do tamanho correto manualmente.');
+        return;
+      }
+      
       let novaQtd = (p.quantidade || 0) - 1;
       if(novaQtd < 0) { alert('O estoque desse produto já está zerado!'); return; }
       
@@ -317,23 +384,39 @@
       document.getElementById('totalCount').innerText = `${ps.length} itens cadastrados`;
       
       document.getElementById('adminList').innerHTML=ps.map(p=>{
-        const qtd = p.quantidade !== undefined && p.quantidade !== null ? p.quantidade : 0;
-        const estoqueStatus = qtd === 0 ? '<span style="color:#9b2f2f; font-weight:bold; background:#fce8e8; padding:2px 6px; border-radius:4px; font-size:12px;">ESGOTADO</span>' : `<span style="background:#eaf4ec; color:#2e6a39; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold;">ESTOQUE: ${qtd}</span>`;
-        const custoInfo = p.preco_custo ? `<br><small style="color:var(--muted)">Custo: ${money(p.preco_custo)}</small>` : '';
-        const codigoInfo = p.codigo ? `<small style="background:#f0e9e1; padding:2px 6px; border-radius:4px; font-size:12px;">Ref: ${p.codigo}</small>` : '';
+        
+        let infoEstoquePreco = '';
+        const temVar = p.variacoes && p.variacoes.length > 0;
+        
+        if (temVar) {
+          const varTags = p.variacoes.map(v => `<small style="background:#f0e9e1; padding:2px 4px; border-radius:4px; font-size:11px;">${v.nome}: ${v.quantidade} un</small>`).join(' ');
+          const minPreco = Math.min(...p.variacoes.map(v => Number(v.preco)));
+          infoEstoquePreco = `
+            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px;">${varTags}</div>
+            <strong style="font-size:16px; color:var(--gold);">A partir de ${money(minPreco)}</strong>
+          `;
+        } else {
+          const qtd = p.quantidade !== undefined && p.quantidade !== null ? p.quantidade : 0;
+          const estoqueStatus = qtd === 0 ? '<span style="color:#9b2f2f; font-weight:bold; background:#fce8e8; padding:2px 6px; border-radius:4px; font-size:12px;">ESGOTADO</span>' : `<span style="background:#eaf4ec; color:#2e6a39; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold;">ESTOQUE: ${qtd}</span>`;
+          infoEstoquePreco = `
+            <div style="margin-bottom:8px;">${estoqueStatus}</div>
+            <strong style="font-size:16px; color:var(--gold);">${money(p.price)}</strong>
+          `;
+        }
+
+        const custoInfo = p.preco_custo ? `<br><small style="color:var(--muted)">Custo Ref: ${money(p.preco_custo)}</small>` : '';
+        const codigoInfo = p.codigo ? `<small style="background:#e5dbcf; padding:2px 6px; border-radius:4px; font-size:12px; margin-bottom:6px; display:inline-block;">Ref: ${p.codigo}</small><br>` : '';
         
         return `<div class="adminProduct">
           <img src="${p.images?.[0]||fallbackImg}">
           <div>
+            ${codigoInfo}
             <h3 style="margin:0 0 4px 0; font-size:18px;">${p.name}</h3>
-            <div style="display:flex; gap:6px; margin-bottom:8px; align-items:center;">
-              ${estoqueStatus} ${codigoInfo}
-            </div>
-            <strong style="font-size:16px; color:var(--gold);">${money(p.price)}</strong>
+            ${infoEstoquePreco}
             ${custoInfo}
           </div>
           <div class="prod-actions">
-            <button class="success" onclick="registrarVenda(${p.id})" title="Diminuir 1 do estoque">Baixa (-1)</button>
+            ${!temVar ? `<button class="success" onclick="registrarVenda(${p.id})" title="Diminuir 1 do estoque">Baixa (-1)</button>` : ''}
             <button class="ghost" onclick="editProduct(${p.id})">Editar</button> 
             <button class="danger" onclick="deleteProduct(${p.id})">Apagar</button>
           </div>
