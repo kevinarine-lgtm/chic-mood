@@ -37,7 +37,6 @@
     .chip.active{background:var(--gold);color:#fff}
     select{min-width:220px}
     
-    /* INTERFACE DE PRODUTO E INFRAESTRUTURA DE ESTOQUE */
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
     .product{position:relative; background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 14px 28px rgba(89,55,24,.08);cursor:pointer;transition:.2s}
     .product:hover{transform:translateY(-3px)}
@@ -49,10 +48,13 @@
     .price{font-weight:bold;color:var(--gold);font-size:22px;margin:12px 0}
     .product button{width:100%}
     
-    /* DESIGN DA ETIQUETA DE FORA DE ESTOQUE */
     .badge-esgotado { position:absolute; top:12px; right:12px; background:#9b2f2f; color:#fff; padding:5px 12px; border-radius:999px; font-size:11px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; z-index:2; box-shadow:0 4px 10px rgba(0,0,0,0.15) }
     .btn-disabled { border:1px solid var(--line); background:#e2d9cf !important; color:var(--muted) !important; cursor:not-allowed !important; opacity:0.75; box-shadow:none !important; }
     
+    .var-btn { background: #fffaf3; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; cursor: pointer; color: var(--text); font-family: inherit; font-size: 15px; transition: 0.2s; }
+    .var-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+    .var-btn:disabled { opacity: 0.5; cursor: not-allowed; text-decoration: line-through; }
+
     .drawer,.modal{position:fixed;inset:0;display:none;z-index:20}
     .drawer.open,.modal.open{display:block}
     .overlay{position:absolute;inset:0;background:rgba(41,28,17,.42)}
@@ -169,14 +171,16 @@
   </div>
   
   <script>
-    // URL E CHAVE DO BANCO DE DADOS NOVO (SOHQHDIUQQWZLDGUVEIH)
     const SUPABASE_URL = 'https://sohqhdiuqqwzldguveih.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_adE1mEzr3nGsxLKVpcsMVw_sEwxqP_R';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     const WHATSAPP = '5511976359835';
     let currentCategory = 'todos'; let shipping = 0; let currentPhotoIndex = 0; let currentDetailId = null;
-    let cart = JSON.parse(localStorage.getItem('chicMoodCartV3')||'[]');
+    let currentVarIndex = null; // Guarda o tamanho selecionado no momento
+
+    // Mudamos a chave do carrinho para V4 para evitar conflito com dados velhos do cliente
+    let cart = JSON.parse(localStorage.getItem('chicMoodCartV4')||'[]');
     let globalProducts = [];
     const fallbackImg = 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#f3dfc6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#a87936" font-family="serif" font-size="44">Chic Mood</text></svg>`);
     
@@ -187,6 +191,7 @@
         if(!p.images || p.images.length === 0) p.images = [fallbackImg];
         if(!p.shortDescription) p.shortDescription = p.description || '';
         if(!p.video) p.video = '';
+        if(!p.variacoes) p.variacoes = [];
         return p;
       });
     }
@@ -200,7 +205,7 @@
     
     async function updateSubFilter(){
       const sel = document.getElementById('subFilter'); const old = sel.value;
-      globalProducts = await fetchProductsFromNuvem();
+      if(globalProducts.length === 0) globalProducts = await fetchProductsFromNuvem();
       let ps = globalProducts.filter(p => currentCategory === 'todos' || p.category === currentCategory);
       let subs = [...new Set(ps.map(p => p.subcategory || 'Sem subcategoria'))].sort();
       sel.innerHTML = '<option value="todos">Todas as subcategorias</option>' + subs.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -214,15 +219,26 @@
       
       document.getElementById('productsGrid').innerHTML = ps.length ? ps.map(p => {
         
-        // LEITURA DO ESTOQUE E VERIFICAÇÃO SE TEM VÍDEO
-        const qtd = p.quantidade != null ? Number(p.quantidade) : 0;
-        const isEsgotado = qtd <= 0;
-        const hasVideo = p.video && String(p.video).trim() !== '' && String(p.video).trim() !== 'null';
+        const hasVar = p.variacoes && p.variacoes.length > 0;
+        let displayPrice = '';
+        let isEsgotado = false;
+        
+        // Verifica preço e estoque dependendo se tem variação ou não
+        if(hasVar) {
+          const totalEstoqueVar = p.variacoes.reduce((acc, v) => acc + (Number(v.quantidade)||0), 0);
+          isEsgotado = totalEstoqueVar <= 0;
+          const minPrice = Math.min(...p.variacoes.map(v => Number(v.preco)));
+          displayPrice = `<span style="font-size:14px; color:var(--muted); font-weight:normal;">A partir de</span><br>${money(minPrice)}`;
+        } else {
+          isEsgotado = (p.quantidade != null ? Number(p.quantidade) : 0) <= 0;
+          displayPrice = money(p.price);
+        }
 
+        const hasVideo = p.video && String(p.video).trim() !== '' && String(p.video).trim() !== 'null';
         const labelHTML = isEsgotado ? `<div class="badge-esgotado">Fora de Estoque</div>` : '';
         const btnHTML = isEsgotado 
           ? `<button class="cartBtn btn-disabled" disabled>Fora de estoque</button>`
-          : `<button class="primary" onclick="event.stopPropagation();addToCart(${p.id})">Adicionar ao carrinho</button>`;
+          : `<button class="primary" onclick="event.stopPropagation();openDetails(${p.id})">${hasVar ? 'Ver Tamanhos' : 'Adicionar ao carrinho'}</button>`;
         
         return `<article class="product" onclick="openDetails(${p.id})">
           ${labelHTML}
@@ -232,45 +248,87 @@
             <h3>${p.name}</h3>
             <div class="sub">${p.subcategory||''}${hasVideo ?' <span class="videoBadge">• vídeo</span>':''}</div>
             <p style="color:var(--muted)">${p.shortDescription||''}</p>
-            <div class="price">${money(p.price)}</div>
+            <div class="price">${displayPrice}</div>
             ${btnHTML}
           </div>
         </article>`
       }).join('') : '<div class="empty">Nenhum produto encontrado.</div>';
     }
     
-    function openDetails(id){ currentDetailId = id; currentPhotoIndex = 0; renderDetails(); document.getElementById('productModal').classList.add('open'); }
+    function openDetails(id){ 
+      currentDetailId = id; 
+      currentPhotoIndex = 0; 
+      
+      // Define a primeira variação em estoque como selecionada
+      const p = globalProducts.find(x => x.id === id);
+      currentVarIndex = null;
+      if(p && p.variacoes && p.variacoes.length > 0) {
+        const firstAvail = p.variacoes.findIndex(v => Number(v.quantidade) > 0);
+        currentVarIndex = firstAvail !== -1 ? firstAvail : 0;
+      }
+      
+      renderDetails(); 
+      document.getElementById('productModal').classList.add('open'); 
+    }
     
+    function selectVar(index) {
+      currentVarIndex = index;
+      renderDetails();
+    }
+
     function renderDetails(){
       const p = globalProducts.find(x => x.id === currentDetailId); if(!p) return;
       const imgs = p.images?.length ? p.images : [fallbackImg];
       
-      // VALIDAÇÕES ESTABELECIDAS COM O NOVO BANCO
       const videoSrc = (p.video && String(p.video).trim() !== '' && String(p.video).trim() !== 'null') ? String(p.video).trim() : '';
-      const qtd = p.quantidade != null ? Number(p.quantidade) : 0;
-      const isEsgotado = qtd <= 0;
+      const hasVar = p.variacoes && p.variacoes.length > 0;
+      
+      let isEsgotado = false;
+      let precoFinalHTML = money(p.price);
+      
+      // Controle de Tamanhos / Variações
+      let variacoesHTML = '';
+      if(hasVar) {
+        const selectedVar = p.variacoes[currentVarIndex];
+        isEsgotado = (Number(selectedVar.quantidade) || 0) <= 0;
+        precoFinalHTML = money(selectedVar.preco);
+        
+        const btnVars = p.variacoes.map((v, i) => {
+          const btnClass = currentVarIndex === i ? 'var-btn active' : 'var-btn';
+          const semEstoque = (Number(v.quantidade) || 0) <= 0;
+          return `<button class="${btnClass}" ${semEstoque ? 'disabled' : `onclick="selectVar(${i})"`}>
+            ${v.nome} - ${money(v.preco)}
+          </button>`;
+        }).join('');
+        
+        variacoesHTML = `
+          <div style="margin: 20px 0;">
+            <label style="font-size:14px; color:var(--gold); font-weight:bold; display:block; margin-bottom:10px;">Selecione o tamanho/ML:</label>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">${btnVars}</div>
+          </div>
+        `;
+      } else {
+        isEsgotado = (p.quantidade != null ? Number(p.quantidade) : 0) <= 0;
+      }
       
       let mainContentHTML = '';
       if (currentPhotoIndex === 'video' && videoSrc !== '') {
-        mainContentHTML = `<video class="mainDetailVideo" controls src="${videoSrc}"></video>`;
+        mainContentHTML = `<video class="mainDetailVideo" controls src="${videoSrc}" autoplay muted></video>`;
       } else {
         if (currentPhotoIndex === 'video') currentPhotoIndex = 0;
         mainContentHTML = `<img src="${imgs[currentPhotoIndex] || imgs[0]}">`;
       }
       
       let thumbsHTML = imgs.map((img, i) => `<img class="${i === currentPhotoIndex ? 'active' : ''}" src="${img}" onclick="currentPhotoIndex=${i}; renderDetails()">`).join('');
-      
-      // SÓ MOSTRA O BOTÃO DE PLAY SE EXISTIR O ARQUIVO
       if (videoSrc !== '') {
         thumbsHTML += `<div class="thumb-video ${currentPhotoIndex === 'video' ? 'active' : ''}" onclick="currentPhotoIndex='video'; renderDetails()"><span class="play-icon">▶</span></div>`;
       }
       
-      // Bloqueio inteligente de ações no modal
       let acoesHTML = '';
       if (isEsgotado) {
-        const txtWhats = encodeURIComponent(`Olá! Gostaria de saber sobre a previsão de reposição do produto: ${p.name} ${p.codigo ? `(Código/Ref: ${p.codigo})` : ''}`);
+        const txtWhats = encodeURIComponent(`Olá! Gostaria de saber sobre a reposição de: ${p.name} ${hasVar ? `(${p.variacoes[currentVarIndex].nome})` : ''}`);
         acoesHTML = `
-          <button class="cartBtn btn-disabled" disabled style="width:100%">Fora de estoque</button>
+          <button class="cartBtn btn-disabled" disabled style="width:100%">Tamanho fora de estoque</button>
           <br><br>
           <a class="whats" style="background:#6c5e53;" target="_blank" href="https://wa.me/${WHATSAPP}?text=${txtWhats}">Consultar previsão de reposição</a>
         `;
@@ -292,7 +350,10 @@
             <div class="cat">${p.category === 'semijoias' ? 'Semijoias' : 'Perfumes'} • ${p.subcategory || ''}</div>
             <h2>${p.name}</h2>
             ${p.codigo ? `<small style="color:var(--muted); display:block; margin-top:-6px; margin-bottom:10px;">Ref: ${p.codigo}</small>` : ''}
-            <div class="price">${money(p.price)}</div>
+            <div class="price" style="font-size:28px;">${precoFinalHTML}</div>
+            
+            ${variacoesHTML}
+            
             <p class="desc">${p.description || p.shortDescription || 'Descrição em breve.'}</p>
             <br>
             ${acoesHTML}
@@ -302,31 +363,59 @@
     }
     
     function closeDetails(){document.getElementById('productModal').classList.remove('open')}
-    function singleWhats(p){ return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Olá! Tenho interesse no produto da Chic Mood:\n\n- ${p.name} - ${money(p.price)}\n${p.codigo ? `Código: ${p.codigo}` : ''}`)}`; }
+    function singleWhats(p){ 
+      const temVar = p.variacoes && p.variacoes.length > 0;
+      const nomeVar = temVar ? ` - ${p.variacoes[currentVarIndex].nome}` : '';
+      const precoVar = temVar ? p.variacoes[currentVarIndex].preco : p.price;
+      return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Olá! Tenho interesse no produto:\n\n- ${p.name}${nomeVar} - ${money(precoVar)}\n${p.codigo ? `Código: ${p.codigo}` : ''}`)}`; 
+    }
     function money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
     
     function addToCart(id){
       let p = globalProducts.find(x => x.id === id);
-      const qtd = p.quantidade != null ? Number(p.quantidade) : 0;
-      if (qtd <= 0) return; // Trava de segurança no carrinho
+      let selectedVarObj = null;
       
-      let item = cart.find(i => i.id === id);
-      if(item) item.qty++; else cart.push({id, qty:1});
+      if(p.variacoes && p.variacoes.length > 0) {
+         if(currentVarIndex === null) return; 
+         selectedVarObj = p.variacoes[currentVarIndex];
+         if(Number(selectedVarObj.quantidade) <= 0) return;
+      } else {
+         if((Number(p.quantidade) || 0) <= 0) return; 
+      }
+      
+      // Se tiver variação, armazena o índice dela junto no carrinho
+      let cartKey = id + (currentVarIndex !== null ? `_var_${currentVarIndex}` : '');
+      
+      let item = cart.find(i => i.cartKey === cartKey);
+      if(item) {
+        item.qty++;
+      } else {
+        cart.push({id, cartKey, varIndex: currentVarIndex, qty: 1});
+      }
+      
       saveCart(); openCart();
     }
     
-    function saveCart(){localStorage.setItem('chicMoodCartV3', JSON.stringify(cart)); renderCart()}
+    function saveCart(){localStorage.setItem('chicMoodCartV4', JSON.stringify(cart)); renderCart()}
     function openCart(){document.getElementById('cartDrawer').classList.add('open'); renderCart()}
     function closeCart(){document.getElementById('cartDrawer').classList.remove('open')}
-    function changeQty(id, delta){ let item = cart.find(i => i.id === id); if(!item)return; item.qty += delta; if(item.qty <= 0) cart = cart.filter(i => i.id !== id); saveCart(); }
+    function changeQty(cartKey, delta){ let item = cart.find(i => i.cartKey === cartKey); if(!item)return; item.qty += delta; if(item.qty <= 0) cart = cart.filter(i => i.cartKey !== cartKey); saveCart(); }
     
     function renderCart(){
       let ps = globalProducts; let subtotal = 0;
       document.getElementById('cartCount').textContent = cart.reduce((a,b) => a + b.qty, 0);
       document.getElementById('cartItems').innerHTML = cart.length ? cart.map(i => {
         let p = ps.find(x => x.id === i.id); if(!p) return '';
-        subtotal += p.price * i.qty;
-        return `<div class="item"><img src="${p.images?.[0]||fallbackImg}"><div><b>${p.name}</b><br><small>${money(p.price)}</small><div class="qty"><button onclick="changeQty(${i.id},-1)">-</button><span>${i.qty}</span><button onclick="changeQty(${i.id},1)">+</button></div></div><b>${money(p.price*i.qty)}</b></div>`;
+        
+        let pName = p.name;
+        let pPrice = p.price;
+        if(i.varIndex !== null && p.variacoes && p.variacoes[i.varIndex]) {
+          pName += ` <span style="color:var(--gold); font-size:13px;">(${p.variacoes[i.varIndex].nome})</span>`;
+          pPrice = Number(p.variacoes[i.varIndex].preco);
+        }
+        
+        subtotal += pPrice * i.qty;
+        return `<div class="item"><img src="${p.images?.[0]||fallbackImg}"><div><b>${pName}</b><br><small>${money(pPrice)}</small><div class="qty"><button onclick="changeQty('${i.cartKey}',-1)">-</button><span>${i.qty}</span><button onclick="changeQty('${i.cartKey}',1)">+</button></div></div><b>${money(pPrice*i.qty)}</b></div>`;
       }).join('') : '<div class="empty">Seu carrinho está vazio.</div>';
       
       document.getElementById('subtotal').textContent = money(subtotal);
@@ -336,8 +425,12 @@
     }
     
     function whatsLink(subtotal){
-      let ps = globalProducts;
-      let lines = cart.map(i => { let p = ps.find(x => x.id === i.id); return p ? `- ${i.qty}x ${p.name} ${p.codigo ? `(${p.codigo})`:''}` : ''; }).join('\n');
+      let lines = cart.map(i => { 
+        let p = globalProducts.find(x => x.id === i.id);
+        if(!p) return '';
+        let extra = i.varIndex !== null && p.variacoes ? ` (${p.variacoes[i.varIndex].nome})` : '';
+        return `- ${i.qty}x ${p.name}${extra} ${p.codigo ? `[Ref: ${p.codigo}]`:''}`; 
+      }).join('\n');
       let cep = document.getElementById('cepInput')?.value || '';
       return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Olá! Quero finalizar minha compra na Chic Mood.\n\nProdutos:\n${lines||'Carrinho vazio'}\n\nSubtotal: ${money(subtotal)}\nFrete estimado: ${money(shipping)}\nTotal estimado: ${money(subtotal+shipping)}\nCEP: ${cep}\n\nPor favor, confirme a disponibilidade dos itens.`)}`;
     }
