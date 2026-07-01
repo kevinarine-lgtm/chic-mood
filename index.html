@@ -320,13 +320,14 @@
           const btnClass = currentVarIndex === i ? 'var-btn active' : 'var-btn';
           const semEstoque = (Number(v.quantidade) || 0) <= 0;
           return `<button class="${btnClass}" ${semEstoque ? 'disabled' : `onclick="selectVar(${i})"`}>
-            ${v.nome} - ${money(v.preco)}
+            ${v.nome}
           </button>`;
         }).join('');
         
+        const tituloVar = p.variacoes.length > 1 ? 'Selecione o tamanho:' : 'Tamanho:';
         variacoesHTML = `
           <div style="margin: 20px 0;">
-            <label style="font-size:14px; color:var(--gold); font-weight:bold; display:block; margin-bottom:10px;">Selecione o tamanho/ML:</label>
+            <label style="font-size:14px; color:var(--gold); font-weight:bold; display:block; margin-bottom:10px;">${tituloVar}</label>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">${btnVars}</div>
           </div>
         `;
