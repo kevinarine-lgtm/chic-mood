@@ -36,17 +36,21 @@
     .field-group label {font-size: 13px; color: var(--gold); font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
     .admin input, .admin select {width:100%;border:1px solid var(--line);background:#fffaf3;color:var(--text);border-radius:12px;padding:12px 16px;font-size:15px; font-family:inherit;}
     
-    /* EDITOR DE TEXTO CUSTOMIZADO */
     .editor-toolbar { display: flex; gap: 6px; background: #fffaf3; border: 1px solid var(--line); border-bottom: none; border-radius: 12px 12px 0 0; padding: 8px 12px; }
     .editor-toolbar button { background: #fff; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; padding: 4px 10px; font-size: 15px; color: var(--gold); font-family: inherit; transition: 0.2s;}
     .editor-toolbar button:hover { background: var(--gold); color: #fff; }
-    .editor-box { width: 100%; min-height: 90px; border: 1px solid var(--line); background: #fffaf3; color: var(--text); border-radius: 0 0 12px 12px; padding: 12px 16px; font-size: 15px; font-family: inherit; outline: none; }
+    .editor-box { width: 100%; min-height: 90px; border: 1px solid var(--line); background: #fffaf3; color: var(--text); border-radius: 0 0 12px 12px; padding: 12px 16px; font-size: 15px; font-family: Georgia, serif !important; line-height: 1.6; outline: none; }
+    .editor-box * { font-family: Georgia, serif !important; }
     .editor-box:empty:before { content: attr(data-placeholder); color: #a99c92; pointer-events: none; display: block; }
     
     .previewImgs{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
     .previewImgs img{width:80px;height:80px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
     .previewVideo video{max-width:100%;max-height:200px;border-radius:12px;border:1px solid var(--line); margin-top:10px;}
     
+    /* FILTROS ADMIN */
+    .admin-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+    .admin-filters select { max-width: 250px; }
+
     .listAdmin{display:grid;gap:16px;margin-top:10px}
     .adminProduct{display:grid;grid-template-columns:86px 1fr auto;gap:16px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 4px 10px rgba(0,0,0,0.035)}
     .adminProduct img{width:86px;height:86px;min-width:86px;max-width:86px;object-fit:cover;border-radius:14px;display:block}
@@ -54,7 +58,6 @@
     .header-lista {display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:20px; margin-top:40px;}
     .header-lista h2 {margin:0; color:var(--gold); font-style:italic;}
     
-    /* VARIATIONS STYLES */
     .var-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; padding: 10px; background: #fbf6f0; border: 1px solid var(--line); border-radius: 12px; }
     .var-row input { padding: 8px 12px; }
     
@@ -218,6 +221,21 @@
         <h2>Seus Produtos Cadastrados</h2>
         <span style="color:var(--muted); font-size:14px;" id="totalCount">Carregando...</span>
       </div>
+
+      <div class="admin-filters">
+        <select id="filterAdminCat" onchange="renderAdmin()">
+          <option value="todos">Todas as Categorias</option>
+          <option value="semijoias">Semijoias</option>
+          <option value="perfumes">Perfumes</option>
+        </select>
+        <select id="filterAdminSub" onchange="renderAdmin()">
+          <option value="todos">Todos os Gêneros/Linhas</option>
+        </select>
+        <select id="filterAdminMarca" onchange="renderAdmin()">
+          <option value="todos">Todas as Marcas</option>
+        </select>
+      </div>
+
       <div id="adminList" class="listAdmin"></div>
       <br><br>
     </section>
@@ -245,7 +263,6 @@
     function logout(){localStorage.removeItem('chicMoodLogged');location.reload();}
     function showAdmin(){document.getElementById('loginBox').style.display='none';document.getElementById('adminBox').style.display='block';renderAdmin()}
     
-    // FUNÇÃO PARA FORMATAR TEXTO (B, I, U)
     function formatText(command) {
       document.execCommand(command, false, null);
     }
@@ -279,7 +296,6 @@
       editingId=null; editingImages=[]; editingVideo=''; localSelectedFiles=[]; productVariacoes=[];
       ['name','price','subcategory','marca','photos','videoUrl','videoFile','codigo','quantidade','precoCusto'].forEach(id=>document.getElementById(id).value='');
       
-      // Limpa os editores visuais
       document.getElementById('shortDescription').innerHTML = '';
       document.getElementById('description').innerHTML = '';
       
@@ -319,7 +335,6 @@
       const subcategory=document.getElementById('subcategory').value.trim()||'';
       const marca=document.getElementById('marca').value.trim()||'';
       
-      // Agora pegamos o HTML formatado gerado pelo editor
       const shortDescription = document.getElementById('shortDescription').innerHTML.trim();
       const description = document.getElementById('description').innerHTML.trim();
       
@@ -376,7 +391,6 @@
       document.getElementById('subcategory').value=p.subcategory||'';
       document.getElementById('marca').value=p.marca||'';
       
-      // Preenche os editores visuais
       document.getElementById('shortDescription').innerHTML=p.shortDescription||''; 
       document.getElementById('description').innerHTML=p.description||'';
       
@@ -414,11 +428,43 @@
       }
     }
 
+    // ATUALIZAÇÃO DOS FILTROS DENTRO DO ADMIN
+    function updateAdminFilterOptions(ps) {
+      const cat = document.getElementById('filterAdminCat').value;
+      const subSel = document.getElementById('filterAdminSub'); const oldSub = subSel.value;
+      const marcaSel = document.getElementById('filterAdminMarca'); const oldMarca = marcaSel.value;
+
+      let filtered = ps.filter(p => cat === 'todos' || p.category === cat);
+
+      let subs = [...new Set(filtered.map(p => p.subcategory).filter(Boolean))].sort();
+      subSel.innerHTML = '<option value="todos">Todos os Gêneros/Linhas</option>' + subs.map(s => `<option value="${s}">${s}</option>`).join('');
+      if(subs.includes(oldSub)) subSel.value = oldSub;
+
+      let marcas = [...new Set(filtered.map(p => p.marca).filter(Boolean))].sort();
+      marcaSel.innerHTML = '<option value="todos">Todas as Marcas</option>' + marcas.map(m => `<option value="${m}">${m}</option>`).join('');
+      if(marcas.includes(oldMarca)) marcaSel.value = oldMarca;
+    }
+
     async function renderAdmin(){
       const ps = await fetchProductsFromNuvem();
-      document.getElementById('totalCount').innerText = `${ps.length} itens cadastrados`;
       
-      document.getElementById('adminList').innerHTML=ps.map(p=>{
+      // Atualiza os selects com base nas opções existentes
+      updateAdminFilterOptions(ps);
+
+      const fCat = document.getElementById('filterAdminCat').value;
+      const fSub = document.getElementById('filterAdminSub').value;
+      const fMarca = document.getElementById('filterAdminMarca').value;
+
+      // Filtra a lista antes de renderizar na tela
+      let listaFiltrada = ps.filter(p => 
+        (fCat === 'todos' || p.category === fCat) &&
+        (fSub === 'todos' || p.subcategory === fSub) &&
+        (fMarca === 'todos' || p.marca === fMarca)
+      );
+
+      document.getElementById('totalCount').innerText = `${listaFiltrada.length} de ${ps.length} itens exibidos`;
+      
+      document.getElementById('adminList').innerHTML = listaFiltrada.map(p=>{
         let infoEstoquePreco = '';
         const temVar = p.variacoes && p.variacoes.length > 0;
         
