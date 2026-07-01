@@ -1,432 +1,481 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Upright:wght@300;400&family=Mea+Culpa&family=Mr+De+Haviland&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Chic Mood</title>
+  <title>Chic Mood | Semijoias e Perfumes</title>
   <style>
     :root{--bg:#f8efe4;--bg2:#fffaf3;--card:#fffdf8;--gold:#a87936;--gold2:#c08a3e;--text:#4f3b2d;--muted:#8b7565;--line:rgba(168,121,54,.25);--shadow:0 18px 45px rgba(89,55,24,.12);--radius:24px}
     *{box-sizing:border-box}
     body{margin:0;font-family:Georgia,'Times New Roman',serif;background:linear-gradient(135deg,var(--bg),var(--bg2));color:var(--text)}
     body:before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 15% 20%,rgba(168,121,54,.12),transparent 32%),radial-gradient(circle at 85% 0%,rgba(255,255,255,.9),transparent 30%);pointer-events:none;z-index:-1}
-    
     header{position:sticky;top:0;background:rgba(255,250,243,.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);z-index:10}
     .nav{max-width:1180px;margin:auto;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;gap:18px}
-    .brand{font-size:34px;color:var(--gold);font-style:italic;letter-spacing:-1px;white-space:nowrap}
+    .brand{display:flex;align-items:center;gap:10px;white-space:nowrap}
     nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
     nav a,button{font-family:inherit}
-    nav a{color:var(--text);text-decoration:none;font-size:16px}
+    nav a{color:var(--text);text-decoration:none;font-size:16px;transition:0.2s;}
     
-    .primary{border:1px solid var(--line);background:linear-gradient(135deg,var(--gold),var(--gold2));color:#fff;border-radius:999px;padding:11px 18px;cursor:pointer;box-shadow:0 8px 18px rgba(168,121,54,.18); font-weight:bold;}
-    .primary.full{width:100%; padding:14px; font-size:16px; margin-top:10px;}
-    .danger{background:#fff;color:#9b2f2f;border:1px solid rgba(155,47,47,.25);border-radius:999px;padding:10px 14px;cursor:pointer;white-space:nowrap}
-    .ghost{background:#fff;color:var(--gold);border:1px solid var(--line);border-radius:999px;padding:10px 14px;cursor:pointer;white-space:nowrap}
-    .ghost.full{width:100%; margin-top:10px;}
-    .success{background:#4a7c59;color:#fff;border:1px solid rgba(74,124,89,.25);border-radius:999px;padding:10px 14px;cursor:pointer;white-space:nowrap;box-shadow:0 4px 10px rgba(74,124,89,.15)}
-    
+    .ig-link { display: inline-flex; align-items: center; justify-content: center; color: var(--gold) !important; padding: 0 4px; transition: 0.2s; }
+    .ig-link:hover { transform: scale(1.1); color: var(--gold2) !important; }
+
+    .cartBtn,.primary{border:1px solid var(--line);background:linear-gradient(135deg,var(--gold),var(--gold2));color:#fff;border-radius:999px;padding:11px 18px;cursor:pointer;box-shadow:0 8px 18px rgba(168,121,54,.18)}
+    .cartBtn span{background:#fff;color:var(--gold);border-radius:50%;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;margin-left:7px;font-size:13px}
+    .hero{max-width:1180px;margin:0 auto;padding:34px 20px 22px;text-align:center}
+    .hero p{max-width:680px;margin:0 auto;color:var(--muted);font-size:18px;line-height:1.6}
+    .brand-slogan{color:var(--gold);font-style:italic;font-size:30px;margin:0 0 10px}
     .wrap{max-width:1180px;margin:0 auto;padding:20px}
     .panel{background:rgba(255,253,248,.72);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:28px}
+    .sectionTitle{text-align:center;margin:0 0 18px}
+    .sectionTitle .small{letter-spacing:8px;color:var(--gold);font-size:12px;text-transform:uppercase}
+    .sectionTitle h2{margin:8px 0 0;color:var(--gold);font-size:42px;font-style:italic;font-weight:400}
+    .filters{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:20px 0 28px}
+    .chip,select,input,textarea{border:1px solid var(--line);background:#fffaf3;color:var(--text);border-radius:999px;padding:12px 16px;font-size:15px}
+    .chip{cursor:pointer}
+    .chip.active{background:var(--gold);color:#fff}
+    select{min-width:200px}
     
-    .card-section {background:#fff; border:1px solid var(--line); border-radius:18px; padding:20px; margin-bottom:20px; box-shadow:0 4px 10px rgba(0,0,0,0.02);}
-    .card-section h3 {margin-top:0; color:var(--gold); font-size:18px; margin-bottom:16px; font-style:italic; border-bottom:1px solid var(--line); padding-bottom:10px;}
-    .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .formGrid .full{grid-column:1/-1}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
+    .product{position:relative; background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 14px 28px rgba(89,55,24,.08);cursor:pointer;transition:.2s}
+    .product:hover{transform:translateY(-3px)}
+    .product img{width:100%;height:230px;object-fit:cover;background:#f2e3d0}
+    .product .info{padding:16px}
+    .cat{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--gold)}
+    .product h3{margin:8px 0 4px;font-size:20px}
+    .sub{color:var(--muted);font-size:14px}
+    .price{font-weight:bold;color:var(--gold);font-size:22px;margin:12px 0}
+    .product button{width:100%}
     
-    .field-group {display: flex; flex-direction: column; gap: 6px;}
-    .field-group label {font-size: 13px; color: var(--gold); font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
-    .admin input, .admin select, .admin textarea{width:100%;border:1px solid var(--line);background:#fffaf3;color:var(--text);border-radius:12px;padding:12px 16px;font-size:15px; font-family:inherit;}
-    .admin textarea{min-height:90px; resize:vertical;}
+    .badge-esgotado { position:absolute; top:12px; right:12px; background:#9b2f2f; color:#fff; padding:5px 12px; border-radius:999px; font-size:11px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; z-index:2; box-shadow:0 4px 10px rgba(0,0,0,0.15) }
+    .btn-disabled { border:1px solid var(--line); background:#e2d9cf !important; color:var(--muted) !important; cursor:not-allowed !important; opacity:0.75; box-shadow:none !important; }
     
-    .previewImgs{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
-    .previewImgs img{width:80px;height:80px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
-    .previewVideo video{max-width:100%;max-height:200px;border-radius:12px;border:1px solid var(--line); margin-top:10px;}
+    .var-btn { background: #fffaf3; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; cursor: pointer; color: var(--text); font-family: inherit; font-size: 15px; transition: 0.2s; }
+    .var-btn.active { background: var(--gold); color: #fff; border-color: var(--gold); }
+    .var-btn:disabled { opacity: 0.5; cursor: not-allowed; text-decoration: line-through; }
+
+    .drawer,.modal{position:fixed;inset:0;display:none;z-index:20}
+    .drawer.open,.modal.open{display:block}
+    .overlay{position:absolute;inset:0;background:rgba(41,28,17,.42)}
+    .cart{position:absolute;right:0;top:0;height:100%;width:min(460px,94vw);background:#fffaf3;box-shadow:-18px 0 40px rgba(0,0,0,.16);padding:24px;overflow:auto}
+    .cart h2{color:var(--gold);font-style:italic;font-size:38px;font-weight:400;margin:0 0 16px}
+    .close{float:right;border:0;background:transparent;font-size:30px;color:var(--gold);cursor:pointer}
+    .item{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding:12px 0}
+    .item img{width:64px;height:64px;object-fit:cover;border-radius:12px}
+    .qty{display:flex;gap:6px;align-items:center}
+    .qty button{border:1px solid var(--line);background:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer}
+    .totals{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}
+    .freteBox{margin-top:16px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:18px}
+    .freteBox input{width:100%;border-radius:14px;margin:10px 0}
+    .freteResult{color:var(--muted);line-height:1.5}
+    .whats{display:block;text-align:center;text-decoration:none;margin-top:16px;border-radius:999px;padding:14px;background:#25d366;color:#fff;font-weight:bold}
+    .empty{text-align:center;color:var(--muted);padding:34px}
+    .details{position:relative;z-index:2;margin:4vh auto;background:#fffaf3;border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);max-width:980px;max-height:92vh;overflow:auto;padding:22px}
+    .desc{white-space:pre-wrap;line-height:1.7;color:var(--muted)}
     
-    .listAdmin{display:grid;gap:16px;margin-top:10px}
-    .adminProduct{display:grid;grid-template-columns:86px 1fr auto;gap:16px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 4px 10px rgba(0,0,0,0.035)}
-    .adminProduct img{width:86px;height:86px;min-width:86px;max-width:86px;object-fit:cover;border-radius:14px;display:block}
-    .adminProduct .prod-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .header-lista {display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:16px; margin-bottom:20px; margin-top:40px;}
-    .header-lista h2 {margin:0; color:var(--gold); font-style:italic;}
+    .detailsGrid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; }
+    #mainDetailContentArea { width: 100%; height: 520px; border-radius: 22px; overflow: hidden; background: #f2e3d0; display: flex; align-items: center; justify-content: center; }
+    #mainDetailContentArea img { width: 100%; height: 100%; object-fit: cover; }
+    #mainDetailContentArea .mainDetailVideo { width: 100%; height: 100%; object-fit: cover; border-radius: 22px; border: 0; }
+    .thumbs { display: flex; gap: 10px; overflow: auto; margin-top: 10px; }
+    .thumbs img, .thumbs .thumb-video { width: 78px; height: 78px; object-fit: cover; border-radius: 12px; border: 2px solid transparent; cursor: pointer; position: relative; transition: border-color 0.2s; background: #f2e3d0; }
+    .thumbs img.active, .thumbs .thumb-video.active { border-color: var(--gold); }
+    .thumbs .thumb-video { display: flex; align-items: center; justify-content: center; }
+    .thumbs .thumb-video .play-icon { color: var(--gold); font-size: 28px; }
+
+    .brand-name { font-family: 'Mr De Haviland', cursive; font-size: 45px; font-weight: normal; color: var(--gold); margin: 0; }
+    header{ height:90px!important; min-height:auto!important; padding:0px 5%!important; display: flex!important; flex-direction: row!important; justify-content:space-between!important; align-items:center!important; margin-bottom: 35px!important; }
+    .brand, header> div { width: 100%!important; display: flex!important; justify-content: space-between!important; align-items: center!important; }
     
-    /* VARIATIONS STYLES */
-    .var-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; padding: 10px; background: #fbf6f0; border: 1px solid var(--line); border-radius: 12px; }
-    .var-row input { padding: 8px 12px; }
-    
+    @media(max-width:768px){ 
+      header{ height:auto!important; min-height:60px!important; flex-direction:column!important; gap:15px!important; padding: 15px 5%!important; margin-bottom: 25px!important; } 
+    }
     @media(max-width:760px){
-      .nav{align-items:flex-start}.brand{font-size:28px}nav{gap:8px}
-      .formGrid{grid-template-columns:1fr}
-      .adminProduct{grid-template-columns:1fr;text-align:center;justify-items:center;padding:20px}
-      .adminProduct img{width:120px;height:120px;min-width:120px;max-width:120px}
-      .adminProduct .prod-actions{width:100%;justify-content:center;margin-top:12px}
-      .header-lista {flex-direction: column; gap: 10px; text-align:center;}
-      .var-row { flex-direction: column; }
+      .nav{align-items:center;padding:10px 12px; flex-direction: column; gap: 12px;}
+      nav{gap:12px; justify-content: center; align-items: center; width: 100%; flex-wrap: wrap;}
+      .hero{padding:10px 16px 18px}
+      .brand-slogan{font-size:24px}
+      .formGrid, .detailsGrid{grid-template-columns:1fr}
+      .sectionTitle h2{font-size:34px}
+      #mainDetailContentArea {height: 360px;}
+      .cart{width:96vw}
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <header>
-    <div class="nav">
-      <div class="brand">Chic Mood Dashboard</div>
-      <nav>
-        <a href="index.html">Ver loja</a>
-        <button class="danger" style="padding: 6px 12px; font-size: 13px;" onclick="logout()">Sair</button>
-      </nav>
-    </div>
+    <div class="brand"><h1 class="brand-name">ㅤChic Mood</h1></div>
+    <nav>
+      <a href="#produtos">Produtos</a>
+      <a href="#semijoias" onclick="setCategory('semijoias')">Semijoias</a>
+      <a href="#perfumes" onclick="setCategory('perfumes')">Perfumes</a>
+      
+      <a href="https://instagram.com/seu_instagram_aqui" target="_blank" class="ig-link" title="Siga nosso Instagram">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+        </svg>
+      </a>
+      <button class="cartBtn" onclick="openCart()">Carrinho <span id="cartCount">0</span></button>
+    </nav>
   </header>
   
-  <main class="admin">
-    <section id="loginBox" class="panel" style="max-width: 500px; margin: 10vh auto; text-align:center;">
-      <h1 style="color:var(--gold); font-style:italic; margin-top:0;">Bem-vinda!</h1>
-      <p style="color:var(--muted)">Digite a sua senha administrativa.</p>
-      <input id="pass" type="password" placeholder="Senha" style="text-align:center; margin-bottom:16px;">
-      <button class="primary full" onclick="login()">Entrar</button>
-    </section>
-    
-    <section id="adminBox" style="display:none">
+  <section class="hero">
+    <div class="brand-slogan">Seu brilho, sua essência</div>
+    <p>Peças e fragrâncias escolhidas para realçar sua beleza com delicadeza, elegância e personalidade.</p>
+  </section>
+  
+  <main class="wrap">
+    <section id="produtos" class="panel">
+      <div class="sectionTitle"><div class="small">Coleção</div><h2>Produtos</h2></div>
       
-      <div style="margin-bottom: 24px;">
-        <h1 style="color:var(--gold); font-style:italic; margin-bottom:4px;">Novo Produto</h1>
-        <p style="color:var(--muted); margin-top:0;">Preencha os blocos abaixo para adicionar ou editar um produto.</p>
-      </div>
-
-      <div class="card-section">
-        <h3>1. Informações Básicas</h3>
-        <div class="formGrid">
-          <div class="field-group full">
-            <label>Nome do Produto</label>
-            <input id="name" placeholder="Ex: Eudora Velvet">
-          </div>
-          <div class="field-group">
-            <label>Categoria Principal</label>
-            <select id="category">
-              <option value="semijoias">Semijoias</option>
-              <option value="perfumes">Perfumes</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label>Subcategoria / Gênero</label>
-            <input id="subcategory" placeholder="Ex: Feminino, Masculino, Colares...">
-          </div>
-          <div class="field-group full">
-            <label>Marca</label>
-            <input id="marca" placeholder="Ex: Natura, Eudora, Chic Mood...">
-          </div>
-        </div>
-      </div>
-
-      <div class="card-section">
-        <h3>2. Valores e Controle de Estoque</h3>
+      <div class="filters">
+        <button class="chip active" data-cat="todos" onclick="setCategory('todos')">Todos</button>
+        <button class="chip" data-cat="semijoias" onclick="setCategory('semijoias')">Semijoias</button>
+        <button class="chip" data-cat="perfumes" onclick="setCategory('perfumes')">Perfumes</button>
         
-        <div class="field-group full" style="margin-bottom: 16px;">
-          <label>Variações de Tamanho / Preço (Ex: Perfumes com diferentes ml)</label>
-          <p style="font-size:13px; color:var(--muted); margin:0 0 10px 0;">Se o produto tem variações (ex: 50ml, 100ml), adicione aqui. O preço principal e estoque abaixo serão ignorados.</p>
-          
-          <div id="variacoesList"></div>
-          
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <input id="varNome" placeholder="Tamanho (Ex: 50ml)" style="flex:1; min-width:120px;">
-            <input id="varPreco" placeholder="Preço (Ex: 89.90)" inputmode="decimal" style="flex:1; min-width:120px;">
-            <input id="varQtd" type="number" placeholder="Estoque" style="flex:1; min-width:100px;">
-            <button class="ghost" type="button" onclick="addVariacao()">+ Adicionar Tamanho</button>
-          </div>
-        </div>
-
-        <hr style="border:0; border-top:1px dashed var(--line); margin: 20px 0;">
-
-        <div class="formGrid">
-          <div class="field-group">
-            <label>Preço Padrão (R$)</label>
-            <input id="price" placeholder="Ex: 89.90" inputmode="decimal">
-          </div>
-          <div class="field-group">
-            <label>Estoque Padrão</label>
-            <input id="quantidade" type="number" placeholder="Ex: 5" min="0" value="1">
-          </div>
-          <div class="field-group">
-            <label>Preço de Custo (Opcional)</label>
-            <input id="precoCusto" placeholder="Ex: 32.50" inputmode="decimal">
-          </div>
-          <div class="field-group">
-            <label>Código Interno (Ref)</label>
-            <input id="codigo" placeholder="Ex: CM-001">
-          </div>
-        </div>
+        <select id="subFilter" onchange="renderProducts()">
+          <option value="todos">Todos os Gêneros/Linhas</option>
+        </select>
+        
+        <select id="marcaFilter" onchange="renderProducts()">
+          <option value="todos">Todas as Marcas</option>
+        </select>
       </div>
 
-      <div class="card-section">
-        <h3>3. Mídias do Produto</h3>
-        <div class="formGrid">
-          <div class="field-group full">
-            <label>Fotos (Pode selecionar várias)</label>
-            <input id="photos" type="file" accept="image/*" multiple style="background:#fff;">
-            <div id="previewImgs" class="previewImgs"></div>
-          </div>
-          
-          <hr class="full" style="border:0; border-top:1px dashed var(--line); margin: 10px 0;">
-          
-          <div class="field-group full">
-            <label>Vídeo: Fazer Upload (Até 12MB)</label>
-            <input id="videoFile" type="file" accept="video/*" style="background:#fff;">
-          </div>
-          <div class="field-group full">
-            <label>OU colar link do Vídeo (Ex: YouTube)</label>
-            <input id="videoUrl" placeholder="Cole o link aqui...">
-          </div>
-          <div id="previewVideo" class="previewVideo full"></div>
-        </div>
-      </div>
-
-      <div class="card-section">
-        <h3>4. Descrições</h3>
-        <div class="formGrid">
-          <div class="field-group full">
-            <label>Descrição Curta (Aparece no card)</label>
-            <textarea id="shortDescription" placeholder="Resumo do produto..."></textarea>
-          </div>
-          <div class="field-group full">
-            <label>Descrição Completa (Aparece na página do produto)</label>
-            <textarea id="description" placeholder="Detalhes, medidas, composição..."></textarea>
-          </div>
-        </div>
-      </div>
-
-      <button class="primary full" onclick="saveProduct()">💾 Salvar Produto no Catálogo</button>
-      <button class="ghost full" onclick="clearForm()">Limpar formulário</button>
-
-
-      <div class="header-lista">
-        <h2>Seus Produtos Cadastrados</h2>
-        <span style="color:var(--muted); font-size:14px;" id="totalCount">Carregando...</span>
-      </div>
-      <div id="adminList" class="listAdmin"></div>
-      <br><br>
+      <div id="productsGrid" class="grid"></div>
     </section>
   </main>
-
+  
+  <div id="cartDrawer" class="drawer">
+    <div class="overlay" onclick="closeCart()"></div>
+    <aside class="cart">
+      <button class="close" onclick="closeCart()">×</button>
+      <h2>Seu carrinho</h2>
+      <div id="cartItems"></div>
+      <div class="freteBox">
+        <b>Calcular frete estimado</b>
+        <input id="cepInput" placeholder="Seu CEP" maxlength="9" oninput="maskCep(this)">
+        <button class="primary" onclick="calculateShipping()">Calcular frete</button>
+        <div id="freteResult" class="freteResult"></div>
+      </div>
+      <div class="totals">
+        <p>Produtos: <b id="subtotal">R$ 0,00</b></p>
+        <p>Frete estimado: <b id="shippingTotal">R$ 0,00</b></p>
+        <p style="font-size:20px">Total estimado: <b id="grandTotal">R$ 0,00</b></p>
+      </div>
+      <a id="whatsBtn" class="whats" href="#" target="_blank">Efetuar compra no WhatsApp</a>
+    </aside>
+  </div>
+  
+  <div id="productModal" class="modal">
+    <div class="overlay" onclick="closeDetails()"></div>
+    <section class="details">
+      <button class="close" onclick="closeDetails()">×</button>
+      <div id="detailsContent"></div>
+    </section>
+  </div>
+  
   <script>
     const SUPABASE_URL = 'https://sohqhdiuqqwzldguveih.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_adE1mEzr3nGsxLKVpcsMVw_sEwxqP_R';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    const ADMIN_PASSWORD='px0507cx';
-    let editingId=null; let editingImages=[]; let editingVideo=''; let localSelectedFiles=[];
-    let productVariacoes = []; 
+    const WHATSAPP = '5511976359835';
+    let currentCategory = 'todos'; let shipping = 0; let currentPhotoIndex = 0; let currentDetailId = null;
+    let currentVarIndex = null;
 
-    const fallbackImg='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#f3dfc6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#a87936" font-family="serif" font-size="44">Chic Mood</text></svg>`);
-
+    let cart = JSON.parse(localStorage.getItem('chicMoodCartV4')||'[]');
+    let globalProducts = [];
+    const fallbackImg = 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#f3dfc6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#a87936" font-family="serif" font-size="44">Chic Mood</text></svg>`);
+    
     async function fetchProductsFromNuvem(){
       const { data, error } = await db.from('produtos').select('*').order('id', { ascending: false });
       if(error) { console.error(error); return []; }
-      return data;
+      return data.map(p => {
+        if(!p.images || p.images.length === 0) p.images = [fallbackImg];
+        if(!p.shortDescription) p.shortDescription = p.description || '';
+        if(!p.video) p.video = '';
+        if(!p.variacoes) p.variacoes = [];
+        return p;
+      });
     }
     
-    function money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
-    function login(){if(document.getElementById('pass').value===ADMIN_PASSWORD){localStorage.setItem('chicMoodLogged','yes');showAdmin()}else alert('Senha incorreta')}
-    function logout(){localStorage.removeItem('chicMoodLogged');location.reload();}
-    function showAdmin(){document.getElementById('loginBox').style.display='none';document.getElementById('adminBox').style.display='block';renderAdmin()}
-    
-    function renderVariacoes() {
-      const box = document.getElementById('variacoesList');
-      box.innerHTML = productVariacoes.map((v, i) => `
-        <div class="var-row">
-          <strong>${v.nome}</strong> 
-          <span>• ${money(v.preco)}</span> 
-          <span style="background:#eaf4ec; color:#2e6a39; padding:2px 6px; border-radius:4px; font-size:12px;">Estoque: ${v.quantidade}</span>
-          <button type="button" class="danger" style="padding:4px 8px; font-size:11px; margin-left:auto;" onclick="removeVariacao(${i})">Remover</button>
-        </div>
-      `).join('');
+    async function setCategory(cat){
+      currentCategory = cat;
+      document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+      await updateFilters(); await renderProducts();
+      document.getElementById('produtos').scrollIntoView({behavior:'smooth'})
     }
-    function addVariacao() {
-      const nome = document.getElementById('varNome').value.trim();
-      const preco = parseFloat(document.getElementById('varPreco').value.replace(',', '.'));
-      const qtd = parseInt(document.getElementById('varQtd').value) || 0;
-      if (!nome || isNaN(preco)) { alert('Preencha o tamanho e o preço corretamente.'); return; }
+    
+    async function updateFilters(){
+      const subSel = document.getElementById('subFilter'); const oldSub = subSel.value;
+      const marcaSel = document.getElementById('marcaFilter'); const oldMarca = marcaSel.value;
       
-      productVariacoes.push({ nome, preco, quantidade: qtd });
-      document.getElementById('varNome').value = '';
-      document.getElementById('varPreco').value = '';
-      document.getElementById('varQtd').value = '';
-      renderVariacoes();
-    }
-    function removeVariacao(index) { productVariacoes.splice(index, 1); renderVariacoes(); }
+      if(globalProducts.length === 0) globalProducts = await fetchProductsFromNuvem();
+      let ps = globalProducts.filter(p => currentCategory === 'todos' || p.category === currentCategory);
+      
+      // Filtro de Gênero/Linha
+      let subs = [...new Set(ps.map(p => p.subcategory).filter(Boolean))].sort();
+      subSel.innerHTML = '<option value="todos">Todos os Gêneros/Linhas</option>' + subs.map(s => `<option value="${s}">${s}</option>`).join('');
+      if(subs.includes(oldSub)) subSel.value = oldSub;
 
-    function clearForm(){
-      editingId=null; editingImages=[]; editingVideo=''; localSelectedFiles=[]; productVariacoes=[];
-      ['name','price','subcategory','marca','shortDescription','description','photos','videoUrl','videoFile','codigo','quantidade','precoCusto'].forEach(id=>document.getElementById(id).value='');
-      document.getElementById('category').value='semijoias';
-      document.getElementById('quantidade').value='1';
-      renderPreview(); renderVideoPreview(); renderVariacoes();
+      // Filtro de Marcas
+      let marcas = [...new Set(ps.map(p => p.marca).filter(Boolean))].sort();
+      marcaSel.innerHTML = '<option value="todos">Todas as Marcas</option>' + marcas.map(m => `<option value="${m}">${m}</option>`).join('');
+      if(marcas.includes(oldMarca)) marcaSel.value = oldMarca;
     }
     
-    function renderPreview(){document.getElementById('previewImgs').innerHTML=editingImages.map((img,i)=>`<div><img src="${img}"><br><button class="danger" style="padding:4px 8px; font-size:11px; margin-top:4px;" onclick="removeImg(${i})">X Remover</button></div>`).join('')}
-    function removeImg(i){editingImages.splice(i,1);renderPreview()}
-
-    document.getElementById('photos').addEventListener('change', async function(){
-      const files=[...this.files]; if(!files.length)return;
-      for(const f of files){
-        localSelectedFiles.push(f);
-        editingImages.push(await fileToData(f));
-      }
-      renderPreview();
-    });
-
-    function renderVideoPreview(){
-      const box=document.getElementById('previewVideo'); const url=document.getElementById('videoUrl').value.trim(); const src=editingVideo||url;
-      if(!src){box.innerHTML='';return}
-      box.innerHTML=src.startsWith('data:video')||src.match(/\.(mp4|webm|ogg)(\?|$)/i)
-        ? `<video controls src="${src}"></video><br><button class="danger" style="margin-top:6px;" onclick="removeVideo()">Remover vídeo</button>`
-        : `<div style="color:var(--gold); font-weight:bold; margin-bottom:6px;">Link de Vídeo detectado</div><a href="${src}" target="_blank" style="color:var(--text);">Testar link</a><br><button class="danger" style="margin-top:6px;" onclick="removeVideo()">Remover link</button>`
-    }
-    function removeVideo(){editingVideo='';document.getElementById('videoUrl').value='';document.getElementById('videoFile').value='';renderVideoPreview()}
-    document.getElementById('videoUrl').addEventListener('input',()=>{if(document.getElementById('videoUrl').value.trim())editingVideo='';renderVideoPreview()});
-    document.getElementById('videoFile').addEventListener('change',async function(){const f=this.files[0];if(!f)return;if(f.size>12*1024*1024){alert('Vídeo muito pesado. Até 12MB.');this.value='';return}editingVideo=await fileToData(f);document.getElementById('videoUrl').value='';renderVideoPreview()});
-    function fileToData(file){return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file)})}
-
-    async function saveProduct(){
-      const name=document.getElementById('name').value.trim();
-      let price=parseFloat(String(document.getElementById('price').value).replace(',','.'));
-      const category=document.getElementById('category').value;
-      const subcategory=document.getElementById('subcategory').value.trim()||'';
-      const marca=document.getElementById('marca').value.trim()||'';
-      const shortDescription=document.getElementById('shortDescription').value.trim();
-      const description=document.getElementById('description').value.trim();
-      const video=(editingVideo||document.getElementById('videoUrl').value.trim());
+    async function renderProducts(){
+      const sub = document.getElementById('subFilter').value;
+      const marca = document.getElementById('marcaFilter').value;
       
-      const codigo=document.getElementById('codigo').value.trim()||null;
-      let quantidade=parseInt(document.getElementById('quantidade').value)||0;
-      const precoCustoRaw=document.getElementById('precoCusto').value.trim();
-      const preco_custo=precoCustoRaw ? parseFloat(precoCustoRaw.replace(',','.')) : null;
-
-      if (!name || (productVariacoes.length === 0 && isNaN(price))) {
-        alert('Erro: Informe um nome e o preço (ou adicione variações de tamanho).');
-        return;
-      }
-      if(isNaN(price)) price = 0;
-
-      let finalImages = editingImages.filter(img => !img.startsWith('data:image'));
-
-      if(localSelectedFiles.length > 0) {
-        for(const file of localSelectedFiles) {
-          const uniqueName = `${Date.now()}_${file.name}`;
-          const { data, error } = await db.storage.from('fotos-produtos').upload(uniqueName, file);
-          if(!error) {
-            const { data: publicData } = db.storage.from('fotos-produtos').getPublicUrl(uniqueName);
-            finalImages.push(publicData.publicUrl);
-          }
+      if(globalProducts.length === 0) globalProducts = await fetchProductsFromNuvem();
+      
+      let ps = globalProducts.filter(p => 
+        (currentCategory === 'todos' || p.category === currentCategory) && 
+        (sub === 'todos' || p.subcategory === sub) &&
+        (marca === 'todos' || p.marca === marca)
+      );
+      
+      document.getElementById('productsGrid').innerHTML = ps.length ? ps.map(p => {
+        const hasVar = p.variacoes && p.variacoes.length > 0;
+        let displayPrice = '';
+        let isEsgotado = false;
+        
+        if(hasVar) {
+          const totalEstoqueVar = p.variacoes.reduce((acc, v) => acc + (Number(v.quantidade)||0), 0);
+          isEsgotado = totalEstoqueVar <= 0;
+          const minPrice = Math.min(...p.variacoes.map(v => Number(v.preco)));
+          displayPrice = `<span style="font-size:14px; color:var(--muted); font-weight:normal;">A partir de</span><br>${money(minPrice)}`;
+        } else {
+          isEsgotado = (p.quantidade != null ? Number(p.quantidade) : 0) <= 0;
+          displayPrice = money(p.price);
         }
+
+        const hasVideo = p.video && String(p.video).trim() !== '' && String(p.video).trim() !== 'null';
+        const labelHTML = isEsgotado ? `<div class="badge-esgotado">Fora de Estoque</div>` : '';
+        const btnHTML = isEsgotado 
+          ? `<button class="cartBtn btn-disabled" disabled>Fora de estoque</button>`
+          : `<button class="primary" onclick="event.stopPropagation();openDetails(${p.id})">${hasVar ? 'Ver Tamanhos' : 'Adicionar ao carrinho'}</button>`;
+        
+        const subText = p.subcategory || '';
+        const marcaText = p.marca ? (subText ? ' • ' + p.marca : p.marca) : '';
+        
+        return `<article class="product" onclick="openDetails(${p.id})">
+          ${labelHTML}
+          <img src="${p.images?.[0]||fallbackImg}">
+          <div class="info">
+            <div class="cat">${p.category==='semijoias'?'Semijoias':'Perfumes'}</div>
+            <h3>${p.name}</h3>
+            <div class="sub">${subText}${marcaText}${hasVideo ?' <span class="videoBadge">• vídeo</span>':''}</div>
+            <p style="color:var(--muted)">${p.shortDescription||''}</p>
+            <div class="price">${displayPrice}</div>
+            ${btnHTML}
+          </div>
+        </article>`
+      }).join('') : '<div class="empty">Nenhum produto encontrado com estes filtros.</div>';
+    }
+    
+    function openDetails(id){ 
+      currentDetailId = id; 
+      currentPhotoIndex = 0; 
+      
+      const p = globalProducts.find(x => x.id === id);
+      currentVarIndex = null;
+      if(p && p.variacoes && p.variacoes.length > 0) {
+        const firstAvail = p.variacoes.findIndex(v => Number(v.quantidade) > 0);
+        currentVarIndex = firstAvail !== -1 ? firstAvail : 0;
       }
-      if(finalImages.length === 0) finalImages = [fallbackImg];
+      
+      renderDetails(); 
+      document.getElementById('productModal').classList.add('open'); 
+    }
+    
+    function selectVar(index) {
+      currentVarIndex = index;
+      renderDetails();
+    }
 
-      const payload = { name, price, category, subcategory, marca, shortDescription, description, images: finalImages, video, codigo, quantidade, preco_custo, variacoes: productVariacoes };
-
-      if(editingId){
-        const { error } = await db.from('produtos').update(payload).eq('id', editingId);
-        if(error) alert('Erro ao atualizar: ' + error.message);
+    function renderDetails(){
+      const p = globalProducts.find(x => x.id === currentDetailId); if(!p) return;
+      const imgs = p.images?.length ? p.images : [fallbackImg];
+      
+      const videoSrc = (p.video && String(p.video).trim() !== '' && String(p.video).trim() !== 'null') ? String(p.video).trim() : '';
+      const hasVar = p.variacoes && p.variacoes.length > 0;
+      
+      let isEsgotado = false;
+      let precoFinalHTML = money(p.price);
+      
+      let variacoesHTML = '';
+      if(hasVar) {
+        const selectedVar = p.variacoes[currentVarIndex];
+        isEsgotado = (Number(selectedVar.quantidade) || 0) <= 0;
+        precoFinalHTML = money(selectedVar.preco);
+        
+        const btnVars = p.variacoes.map((v, i) => {
+          const btnClass = currentVarIndex === i ? 'var-btn active' : 'var-btn';
+          const semEstoque = (Number(v.quantidade) || 0) <= 0;
+          return `<button class="${btnClass}" ${semEstoque ? 'disabled' : `onclick="selectVar(${i})"`}>
+            ${v.nome} - ${money(v.preco)}
+          </button>`;
+        }).join('');
+        
+        variacoesHTML = `
+          <div style="margin: 20px 0;">
+            <label style="font-size:14px; color:var(--gold); font-weight:bold; display:block; margin-bottom:10px;">Selecione o tamanho/ML:</label>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">${btnVars}</div>
+          </div>
+        `;
       } else {
-        const { error } = await db.from('produtos').insert([payload]);
-        if(error) alert('Erro ao cadastrar: ' + error.message);
+        isEsgotado = (p.quantidade != null ? Number(p.quantidade) : 0) <= 0;
       }
-
-      clearForm();
-      await renderAdmin();
-      alert('✅ Produto salvo com sucesso!');
-    }
-
-    async function editProduct(id){
-      const ps = await fetchProductsFromNuvem();
-      const p=ps.find(x=>x.id===id); if(!p)return;
-      editingId=id; editingImages=[...(p.images||[])]; editingVideo=p.video||'';
-      productVariacoes = p.variacoes || [];
       
-      document.getElementById('name').value=p.name; 
-      document.getElementById('price').value=p.price;
-      document.getElementById('category').value=p.category; 
-      document.getElementById('subcategory').value=p.subcategory||'';
-      document.getElementById('marca').value=p.marca||'';
-      document.getElementById('shortDescription').value=p.shortDescription||''; 
-      document.getElementById('description').value=p.description||'';
-      document.getElementById('videoUrl').value=(p.video&& !p.video.startsWith('data:'))?p.video:'';
-      document.getElementById('codigo').value=p.codigo||'';
-      document.getElementById('quantidade').value=p.quantidade!==undefined?p.quantidade:0;
-      document.getElementById('precoCusto').value=p.preco_custo||'';
+      let mainContentHTML = '';
+      if (currentPhotoIndex === 'video' && videoSrc !== '') {
+        mainContentHTML = `<video class="mainDetailVideo" controls src="${videoSrc}" autoplay muted></video>`;
+      } else {
+        if (currentPhotoIndex === 'video') currentPhotoIndex = 0;
+        mainContentHTML = `<img src="${imgs[currentPhotoIndex] || imgs[0]}">`;
+      }
       
-      renderPreview(); renderVideoPreview(); renderVariacoes(); window.scrollTo({top:0,behavior:'smooth'})
-    }
+      let thumbsHTML = imgs.map((img, i) => `<img class="${i === currentPhotoIndex ? 'active' : ''}" src="${img}" onclick="currentPhotoIndex=${i}; renderDetails()">`).join('');
+      if (videoSrc !== '') {
+        thumbsHTML += `<div class="thumb-video ${currentPhotoIndex === 'video' ? 'active' : ''}" onclick="currentPhotoIndex='video'; renderDetails()"><span class="play-icon">▶</span></div>`;
+      }
+      
+      let acoesHTML = '';
+      if (isEsgotado) {
+        const txtWhats = encodeURIComponent(`Olá! Gostaria de saber sobre a reposição de: ${p.name} ${hasVar ? `(${p.variacoes[currentVarIndex].nome})` : ''}`);
+        acoesHTML = `
+          <button class="cartBtn btn-disabled" disabled style="width:100%">Tamanho fora de estoque</button>
+          <br><br>
+          <a class="whats" style="background:#6c5e53;" target="_blank" href="https://wa.me/${WHATSAPP}?text=${txtWhats}">Consultar previsão de reposição</a>
+        `;
+      } else {
+        acoesHTML = `
+          <button class="primary" onclick="addToCart(${p.id});closeDetails();openCart()">Adicionar ao carrinho</button>
+          <br><br>
+          <a class="whats" target="_blank" href="${singleWhats(p)}">Comprar este produto no WhatsApp</a>
+        `;
+      }
+      
+      const subText = p.subcategory || '';
+      const marcaText = p.marca ? (subText ? ' • ' + p.marca : p.marca) : '';
 
-    async function registrarVenda(id){
-      const ps = await fetchProductsFromNuvem();
-      const p = ps.find(x=>x.id===id);
-      if(!p) return;
+      document.getElementById('detailsContent').innerHTML = `
+        <div class="detailsGrid">
+          <div>
+            <div id="mainDetailContentArea">${mainContentHTML}</div>
+            <div class="thumbs">${thumbsHTML}</div>
+          </div>
+          <div>
+            <div class="cat">${p.category === 'semijoias' ? 'Semijoias' : 'Perfumes'} • ${subText}${marcaText}</div>
+            <h2>${p.name}</h2>
+            ${p.codigo ? `<small style="color:var(--muted); display:block; margin-top:-6px; margin-bottom:10px;">Ref: ${p.codigo}</small>` : ''}
+            <div class="price" style="font-size:28px;">${precoFinalHTML}</div>
+            
+            ${variacoesHTML}
+            
+            <p class="desc">${p.description || p.shortDescription || 'Descrição em breve.'}</p>
+            <br>
+            ${acoesHTML}
+          </div>
+        </div>
+      `;
+    }
+    
+    function closeDetails(){document.getElementById('productModal').classList.remove('open')}
+    function singleWhats(p){ 
+      const temVar = p.variacoes && p.variacoes.length > 0;
+      const nomeVar = temVar ? ` - ${p.variacoes[currentVarIndex].nome}` : '';
+      const precoVar = temVar ? p.variacoes[currentVarIndex].preco : p.price;
+      return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Olá! Tenho interesse no produto:\n\n- ${p.name}${nomeVar} - ${money(precoVar)}\n${p.codigo ? `Código: ${p.codigo}` : ''}`)}`; 
+    }
+    function money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+    
+    function addToCart(id){
+      let p = globalProducts.find(x => x.id === id);
+      let selectedVarObj = null;
       
       if(p.variacoes && p.variacoes.length > 0) {
-        alert('Este produto possui variações de tamanho (ML). Por favor, clique em "Editar" para diminuir o estoque do tamanho correto manualmente.');
-        return;
+         if(currentVarIndex === null) return; 
+         selectedVarObj = p.variacoes[currentVarIndex];
+         if(Number(selectedVarObj.quantidade) <= 0) return;
+      } else {
+         if((Number(p.quantidade) || 0) <= 0) return; 
       }
       
-      let novaQtd = (p.quantidade || 0) - 1;
-      if(novaQtd < 0) { alert('O estoque desse produto já está zerado!'); return; }
+      let cartKey = id + (currentVarIndex !== null ? `_var_${currentVarIndex}` : '');
       
-      const { error } = await db.from('produtos').update({ quantidade: novaQtd }).eq('id', id);
-      if(!error) await renderAdmin();
-      else alert('Erro ao registrar venda: ' + error.message);
-    }
-
-    async function deleteProduct(id){
-      if(confirm('Excluir este produto permanentemente da loja?')){
-        const { error } = await db.from('produtos').delete().eq('id', id);
-        if(!error) await renderAdmin();
-        else alert(error.message);
+      let item = cart.find(i => i.cartKey === cartKey);
+      if(item) {
+        item.qty++;
+      } else {
+        cart.push({id, cartKey, varIndex: currentVarIndex, qty: 1});
       }
-    }
-
-    async function renderAdmin(){
-      const ps = await fetchProductsFromNuvem();
-      document.getElementById('totalCount').innerText = `${ps.length} itens cadastrados`;
       
-      document.getElementById('adminList').innerHTML=ps.map(p=>{
-        let infoEstoquePreco = '';
-        const temVar = p.variacoes && p.variacoes.length > 0;
-        
-        if (temVar) {
-          const varTags = p.variacoes.map(v => `<small style="background:#f0e9e1; padding:2px 4px; border-radius:4px; font-size:11px;">${v.nome}: ${v.quantidade} un</small>`).join(' ');
-          const minPreco = Math.min(...p.variacoes.map(v => Number(v.preco)));
-          infoEstoquePreco = `
-            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px;">${varTags}</div>
-            <strong style="font-size:16px; color:var(--gold);">A partir de ${money(minPreco)}</strong>
-          `;
-        } else {
-          const qtd = p.quantidade !== undefined && p.quantidade !== null ? p.quantidade : 0;
-          const estoqueStatus = qtd === 0 ? '<span style="color:#9b2f2f; font-weight:bold; background:#fce8e8; padding:2px 6px; border-radius:4px; font-size:12px;">ESGOTADO</span>' : `<span style="background:#eaf4ec; color:#2e6a39; padding:2px 6px; border-radius:4px; font-size:12px; font-weight:bold;">ESTOQUE: ${qtd}</span>`;
-          infoEstoquePreco = `
-            <div style="margin-bottom:8px;">${estoqueStatus}</div>
-            <strong style="font-size:16px; color:var(--gold);">${money(p.price)}</strong>
-          `;
-        }
-
-        const custoInfo = p.preco_custo ? `<br><small style="color:var(--muted)">Custo Ref: ${money(p.preco_custo)}</small>` : '';
-        const codigoInfo = p.codigo ? `<small style="background:#e5dbcf; padding:2px 6px; border-radius:4px; font-size:12px; margin-bottom:6px; display:inline-block;">Ref: ${p.codigo}</small><br>` : '';
-        const marcaInfo = p.marca ? ` • ${p.marca}` : '';
-        
-        return `<div class="adminProduct">
-          <img src="${p.images?.[0]||fallbackImg}">
-          <div>
-            ${codigoInfo}
-            <h3 style="margin:0 0 4px 0; font-size:18px;">${p.name}</h3>
-            <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">${p.subcategory||''}${marcaInfo}</div>
-            ${infoEstoquePreco}
-            ${custoInfo}
-          </div>
-          <div class="prod-actions">
-            ${!temVar ? `<button class="success" onclick="registrarVenda(${p.id})" title="Diminuir 1 do estoque">Baixa (-1)</button>` : ''}
-            <button class="ghost" onclick="editProduct(${p.id})">Editar</button> 
-            <button class="danger" onclick="deleteProduct(${p.id})">Apagar</button>
-          </div>
-        </div>`
-      }).join('')
+      saveCart(); openCart();
     }
     
-    if(localStorage.getItem('chicMoodLogged')==='yes') showAdmin();
+    function saveCart(){localStorage.setItem('chicMoodCartV4', JSON.stringify(cart)); renderCart()}
+    function openCart(){document.getElementById('cartDrawer').classList.add('open'); renderCart()}
+    function closeCart(){document.getElementById('cartDrawer').classList.remove('open')}
+    function changeQty(cartKey, delta){ let item = cart.find(i => i.cartKey === cartKey); if(!item)return; item.qty += delta; if(item.qty <= 0) cart = cart.filter(i => i.cartKey !== cartKey); saveCart(); }
+    
+    function renderCart(){
+      let ps = globalProducts; let subtotal = 0;
+      document.getElementById('cartCount').textContent = cart.reduce((a,b) => a + b.qty, 0);
+      document.getElementById('cartItems').innerHTML = cart.length ? cart.map(i => {
+        let p = ps.find(x => x.id === i.id); if(!p) return '';
+        
+        let pName = p.name;
+        let pPrice = p.price;
+        if(i.varIndex !== null && p.variacoes && p.variacoes[i.varIndex]) {
+          pName += ` <span style="color:var(--gold); font-size:13px;">(${p.variacoes[i.varIndex].nome})</span>`;
+          pPrice = Number(p.variacoes[i.varIndex].preco);
+        }
+        
+        subtotal += pPrice * i.qty;
+        return `<div class="item"><img src="${p.images?.[0]||fallbackImg}"><div><b>${pName}</b><br><small>${money(pPrice)}</small><div class="qty"><button onclick="changeQty('${i.cartKey}',-1)">-</button><span>${i.qty}</span><button onclick="changeQty('${i.cartKey}',1)">+</button></div></div><b>${money(pPrice*i.qty)}</b></div>`;
+      }).join('') : '<div class="empty">Seu carrinho está vazio.</div>';
+      
+      document.getElementById('subtotal').textContent = money(subtotal);
+      document.getElementById('shippingTotal').textContent = money(shipping);
+      document.getElementById('grandTotal').textContent = money(subtotal+shipping);
+      document.getElementById('whatsBtn').href = whatsLink(subtotal);
+    }
+    
+    function whatsLink(subtotal){
+      let lines = cart.map(i => { 
+        let p = globalProducts.find(x => x.id === i.id);
+        if(!p) return '';
+        let extra = i.varIndex !== null && p.variacoes ? ` (${p.variacoes[i.varIndex].nome})` : '';
+        return `- ${i.qty}x ${p.name}${extra} ${p.codigo ? `[Ref: ${p.codigo}]`:''}`; 
+      }).join('\n');
+      let cep = document.getElementById('cepInput')?.value || '';
+      return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Olá! Quero finalizar minha compra na Chic Mood.\n\nProdutos:\n${lines||'Carrinho vazio'}\n\nSubtotal: ${money(subtotal)}\nFrete estimado: ${money(shipping)}\nTotal estimado: ${money(subtotal+shipping)}\nCEP: ${cep}\n\nPor favor, confirme a disponibilidade dos itens.`)}`;
+    }
+    
+    function maskCep(el){el.value = el.value.replace(/\D/g,'').replace(/(\d{5})(\d)/,'$1-$2').slice(0,9)}
+    function calculateShipping(){
+      const cep = (document.getElementById('cepInput').value||'').replace(/\D/g,''); const result = document.getElementById('freteResult'); if(cep.length !== 8){result.textContent = 'Digite um CEP válido com 8 números.'; return}
+      const first = Number(cep[0]);
+      if(cep.startsWith('01')||cep.startsWith('02')||cep.startsWith('03')||cep.startsWith('04')||cep.startsWith('05')) shipping = 15;
+      else if(first === 0 || first === 1 || first === 2 || first === 3) shipping = 22;
+      else if(first === 4 || first === 5) shipping = 35;
+      else if(first === 6 || first === 7) shipping = 38;
+      else if(first === 8 || first === 9) shipping = 28;
+      else shipping = 30;
+      result.innerHTML = `Frete estimado: <b>${money(shipping)}</b><br>O valor final será confirmado no WhatsApp.`;
+      renderCart();
+    }
+    
+    async function init(){ await updateFilters(); await renderProducts(); renderCart(); }
+    init();
   </script>
 </body>
 </html>
