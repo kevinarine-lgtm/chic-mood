@@ -37,6 +37,11 @@
     .chip.active{background:var(--gold);color:#fff}
     select{min-width:200px}
     
+    /* Estilo do Banner de Encomenda de Perfumes */
+    .perfume-order-banner { display: none; max-width: 600px; margin: -10px auto 25px; padding: 16px 20px; background: rgba(255, 253, 248, 0.9); border: 1px dashed var(--gold); border-radius: 16px; text-align: center; font-size: 15px; color: var(--text); line-height: 1.5; box-shadow: 0 4px 15px rgba(168,121,54,0.05); }
+    .perfume-order-banner a { color: var(--gold); font-weight: bold; text-decoration: underline; transition: 0.2s; }
+    .perfume-order-banner a:hover { color: var(--gold2); }
+
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
     .product{position:relative; background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 14px 28px rgba(89,55,24,.08);cursor:pointer;transition:.2s; display:flex; flex-direction:column}
     .product:hover{transform:translateY(-3px)}
@@ -146,6 +151,10 @@
         </select>
       </div>
 
+      <div id="perfumeCustomBanner" class="perfume-order-banner">
+        💌 <b>Encomendas Especiais:</b> Procura por um perfume específico? Fale com a gente através do nosso <a href="https://wa.me/5511976359835?text=Ol%C3%A1%21%20Gostaria%20de%20consultar%20o%20pre%C3%A7o%20e%20a%20disponibilidade%20de%20um%20perfume%20espec%C3%ADfico." target="_blank">WhatsApp clicando aqui</a> para consultar preços e encomendar a fragrância que combina com você.
+      </div>
+
       <div id="productsGrid" class="grid"></div>
     </section>
   </main>
@@ -207,6 +216,15 @@
     async function setCategory(cat){
       currentCategory = cat;
       document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+      
+      // Controla a exibição inteligente do banner de encomendas de perfumes
+      const banner = document.getElementById('perfumeCustomBanner');
+      if (cat === 'perfumes') {
+        banner.style.display = 'block';
+      } else {
+        banner.style.display = 'none';
+      }
+      
       await updateFilters(); await renderProducts();
       document.getElementById('produtos').scrollIntoView({behavior:'smooth'})
     }
