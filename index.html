@@ -31,12 +31,18 @@
     .sectionTitle{text-align:center;margin:0 0 18px}
     .sectionTitle .small{letter-spacing:8px;color:var(--gold);font-size:12px;text-transform:uppercase}
     .sectionTitle h2{margin:8px 0 0;color:var(--gold);font-size:42px;font-style:italic;font-weight:400}
-    .filters{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:20px 0 28px}
+    
+    /* FILTROS E BUSCA */
+    .filters{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:20px 0 14px}
     .chip,select,input,textarea{border:1px solid var(--line);background:#fffaf3;color:var(--text);border-radius:999px;padding:12px 16px;font-size:15px}
     .chip{cursor:pointer}
     .chip.active{background:var(--gold);color:#fff}
     select{min-width:200px}
     
+    .search-wrapper { max-width: 460px; margin: 0 auto 28px; padding: 0 10px; }
+    .search-input { width: 100%; border: 1px solid var(--line); background: #fffdfc; color: var(--text); border-radius: 999px; padding: 12px 20px; font-size: 15px; text-align: center; box-shadow: 0 4px 12px rgba(89,55,24,0.03); outline: none; font-family: inherit; transition: border-color 0.2s; }
+    .search-input:focus { border-color: var(--gold); background: #ffffff; }
+
     .whatsapp-bot-float { display: none; position: fixed; bottom: 24px; left: 24px; z-index: 99; background: #25d366; color: #fff; text-decoration: none; padding: 12px 18px; border-radius: 999px; font-weight: bold; font-size: 14px; align-items: center; gap: 8px; box-shadow: 0 8px 24px rgba(37, 211, 102, 0.3); transition: transform 0.2s, background-color 0.2s; animation: pulseBot 2s infinite; }
     .whatsapp-bot-float:hover { transform: scale(1.05); background: #20ba5a; }
     @keyframes pulseBot { 
@@ -81,18 +87,12 @@
     .empty{text-align:center;color:var(--muted);padding:34px}
     .details{position:relative;z-index:2;margin:4vh auto;background:#fffaf3;border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);max-width:980px;max-height:92vh;overflow:auto;padding:22px}
     
-    /* RESET ABSOLUTO DE FONTE E COR PARA AS ÁREAS DE DESCRIÇÃO */
     .desc, .product p, .desc *, .product p * { 
       font-family: Georgia, 'Times New Roman', serif !important; 
       color: var(--muted) !important; 
     }
-    .product p, .product p * {
-      color: var(--muted) !important;
-    }
-    .desc strong, .product p strong, .desc b, .product p b {
-      font-weight: bold !important;
-      color: var(--text) !important; /* Destaca o negrito com a cor principal escura */
-    }
+    .product p, .product p * { color: var(--muted) !important; }
+    .desc strong, .product p strong, .desc b, .product p b { font-weight: bold !important; color: var(--text) !important; }
     .desc { white-space: pre-wrap; line-height: 1.7; }
     
     .detailsGrid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; }
@@ -166,6 +166,10 @@
         <select id="marcaFilter" onchange="renderProducts()">
           <option value="todos">Todas as Marcas</option>
         </select>
+      </div>
+
+      <div class="search-wrapper">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Digite para buscar um produto..." oninput="renderProducts()">
       </div>
 
       <div id="productsGrid" class="grid"></div>
@@ -255,12 +259,10 @@
       if(globalProducts.length === 0) globalProducts = await fetchProductsFromNuvem();
       let ps = globalProducts.filter(p => currentCategory === 'todos' || p.category === currentCategory);
       
-      // Filtro de Gênero/Linha
       let subs = [...new Set(ps.map(p => p.subcategory).filter(Boolean))].sort();
       subSel.innerHTML = '<option value="todos">Todos os Gêneros/Linhas</option>' + subs.map(s => `<option value="${s}">${s}</option>`).join('');
       if(subs.includes(oldSub)) subSel.value = oldSub;
 
-      // Filtro de Marcas
       let marcas = [...new Set(ps.map(p => p.marca).filter(Boolean))].sort();
       marcaSel.innerHTML = '<option value="todos">Todas as Marcas</option>' + marcas.map(m => `<option value="${m}">${m}</option>`).join('');
       if(marcas.includes(oldMarca)) marcaSel.value = oldMarca;
@@ -270,13 +272,24 @@
       const sub = document.getElementById('subFilter').value;
       const marca = document.getElementById('marcaFilter').value;
       
+      // PEGA O VALOR DIGITADO NO CAMPO DE BUSCA
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      
       if(globalProducts.length === 0) globalProducts = await fetchProductsFromNuvem();
       
-      let ps = globalProducts.filter(p => 
-        (currentCategory === 'todos' || p.category === currentCategory) && 
-        (sub === 'todos' || p.subcategory === sub) &&
-        (marca === 'todos' || p.marca === marca)
-      );
+      let ps = globalProducts.filter(p => {
+        const matchesCat = currentCategory === 'todos' || p.category === currentCategory;
+        const matchesSub = sub === 'todos' || p.subcategory === sub;
+        const matchesMarca = marca === 'todos' || p.marca === marca;
+        
+        // LOGICA DE BUSCA: Procura por nome, marca ou subcategoria
+        const nameMatch = p.name ? p.name.toLowerCase().includes(query) : false;
+        const brandMatch = p.marca ? p.marca.toLowerCase().includes(query) : false;
+        const subCatMatch = p.subcategory ? p.subcategory.toLowerCase().includes(query) : false;
+        const matchesQuery = query === '' || nameMatch || brandMatch || subCatMatch;
+
+        return matchesCat && matchesSub && matchesMarca && matchesQuery;
+      });
       
       document.getElementById('productsGrid').innerHTML = ps.length ? ps.map(p => {
         const hasVar = p.variacoes && p.variacoes.length > 0;
@@ -314,7 +327,7 @@
             ${btnHTML}
           </div>
         </article>`
-      }).join('') : '<div class="empty">Nenhum produto encontrado com estes filtros.</div>';
+      }).join('') : '<div class="empty">Nenhum produto encontrado com estes filtros ou busca.</div>';
     }
     
     function openDetails(id){ 
