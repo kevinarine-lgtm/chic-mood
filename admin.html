@@ -305,14 +305,18 @@
       renderPreview(); renderVariacoes();
     }
 
-    function renderPreview(){document.getElementById('previewImgs').innerHTML=editingImages.map((img,i)=>`<div><img src="${img}"><br><button class="danger" style="padding:2px 6px; font-size:10px; margin-top:4px;" onclick="removeImg(${img},${i})">Remover</button></div>`).join('')}
-    function removeImg(img, i){editingImages.splice(i,1);renderPreview()}
+    function renderPreview(){document.getElementById('previewImgs').innerHTML=editingImages.map((img,i)=>`<div><img src="${img}"><br><button class="danger" style="padding:2px 6px; font-size:10px; margin-top:4px;" onclick="removeImg(${i})">Remover</button></div>`).join('')}
+    function removeImg(i){editingImages.splice(i,1);renderPreview()}
 
     document.getElementById('photos').addEventListener('change', async function(){
       for(const f of [...this.files]){ localSelectedFiles.push(f); editingImages.push(await fileToData(f)); }
       renderPreview();
     });
     function fileToData(file){return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file)})}
+
+    function formatText(command) {
+      document.execCommand(command, false, null);
+    }
 
     async function saveProduct(){
       const name=document.getElementById('name').value.trim();
@@ -368,7 +372,7 @@
       const ps = await fetchProductsFromNuvem(); const p = ps.find(x=>x.id===id); if(!p) return;
       if(p.variacoes?.length > 0) { alert('Abra em "Editar" para reduzir o ML correto.'); return; }
       let novaQtd = (p.quantidade || 0) - 1; if(novaQtd < 0) return;
-      await db.from('produtos').update({ quantidade: novaQtd }).eq('id', id); renderAdmin();
+      await db.from('produtos').update({ Float: false, quantidade: novaQtd }).eq('id', id); renderAdmin();
     }
 
     async function deleteProduct(id){ if(confirm('Excluir permanentemente?')) { await db.from('produtos').delete().eq('id', id); renderAdmin(); } }
@@ -385,6 +389,8 @@
       marcaSel.innerHTML = '<option value="todos">Todas as Marcas</option>' + marcas.map(m => `<option value="${m}">${m}</option>`).join('');
       if(marcas.includes(oldMarca)) marcaSel.value = oldMarca;
     }
+
+    function money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
 
     async function renderAdmin(){
       const ps = await fetchProductsFromNuvem(); updateAdminFilterOptions(ps);
