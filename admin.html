@@ -11,6 +11,7 @@
       --card: #ffffff;
       --gold: #a87936;
       --gold-light: #f5eedf;
+      --gold2: #c08a3e;
       --text: #4f3b2d;
       --muted: #8b7565;
       --border: rgba(168, 121, 54, 0.15);
@@ -84,12 +85,45 @@
     .previewImgs img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
 
     @media(max-width: 900px) {
-      body { flex-direction: column; }
-      .sidebar { width: 100%; height: auto; position: relative; padding: 20px; }
-      .main-content { margin-left: 0; padding: 20px; }
-      .formGrid, .admin-filters { grid-template-columns: 1fr; }
-      .adminProduct { grid-template-columns: 1fr; text-align: center; justify-items: center; gap: 10px; }
-      .prod-actions { width: 100%; justify-content: center; }
+      body { flex-direction: column; background: linear-gradient(180deg, var(--sidebar-bg), var(--bg) 260px); }
+      #loginBox { width: calc(100% - 32px); margin: 9vh auto; padding: 28px 20px; }
+      #adminBox { flex-direction: column; min-height: 100vh; }
+      .sidebar { width: 100%; height: auto; position: sticky; top: 0; z-index: 50; padding: 14px 14px 12px; gap: 12px; border-right: 0; border-bottom: 1px solid var(--border); box-shadow: 0 8px 24px rgba(89,55,24,.06); }
+      .sidebar-brand { font-size: 20px; padding-bottom: 8px; }
+      .menu-group { flex-direction: row; gap: 8px; width: 100%; overflow-x: auto; padding-bottom: 2px; }
+      .menu-btn { justify-content: center; text-align: center; white-space: nowrap; padding: 12px 14px; font-size: 14px; }
+      .sidebar .menu-group:last-child { margin-top: 0 !important; display: grid; grid-template-columns: 1fr 1fr; align-items: center; overflow: visible; }
+      .sidebar .menu-group:last-child .ghost, .sidebar .menu-group:last-child .danger { margin: 0 !important; width: 100%; }
+      .main-content { margin-left: 0; padding: 18px 14px 26px; max-width: none; width: 100%; }
+      h2 { font-size: 25px; margin-bottom: 16px; }
+      .card-section { padding: 18px 14px; border-radius: 18px; margin-bottom: 16px; }
+      .formGrid, .admin-filters { grid-template-columns: 1fr; gap: 12px; }
+      .btn-container { flex-direction: column; gap: 10px; }
+      .btn-container button { width: 100%; }
+      .var-builder > div[style*='display: flex'] { display: grid !important; grid-template-columns: 1fr; }
+      .var-row { grid-template-columns: 1fr 1fr; gap: 8px; text-align: left; }
+      .var-row .danger { grid-column: 1 / -1; width: 100%; }
+      .adminProduct { grid-template-columns: 72px 1fr; text-align: left; justify-items: stretch; gap: 12px; align-items: start; padding: 12px; border-radius: 16px; }
+      .adminProduct img { width: 72px; height: 72px; }
+      .prod-actions { grid-column: 1 / -1; width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .prod-actions button { width: 100%; padding: 10px 8px !important; border-radius: 12px !important; font-size: 12px !important; }
+      #tabList > div:first-child { flex-direction: column; align-items: flex-start !important; gap: 4px; }
+      input, select, textarea { font-size: 16px; }
+    }
+
+    @media(max-width: 520px) {
+      .sidebar-brand { font-size: 18px; }
+      .menu-btn { flex: 1; padding: 11px 10px; }
+      .sidebar .menu-group:last-child { grid-template-columns: 1fr; }
+      .main-content { padding: 14px 10px 22px; }
+      .card-section h3 { font-size: 13px; }
+      .admin-filters { padding: 12px; position: sticky; top: 123px; z-index: 30; box-shadow: 0 8px 20px rgba(89,55,24,.06); }
+      .adminProduct { grid-template-columns: 64px 1fr; gap: 10px; }
+      .adminProduct img { width: 64px; height: 64px; }
+      .adminProduct h4 { font-size: 15px !important; line-height: 1.25; }
+      .prod-actions { grid-template-columns: 1fr; }
+      .previewImgs img { width: 64px; height: 64px; }
+      .editor-toolbar { overflow-x: auto; }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
