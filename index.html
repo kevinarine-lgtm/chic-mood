@@ -23,6 +23,10 @@
 
     .cartBtn,.primary{border:1px solid var(--line);background:linear-gradient(135deg,var(--gold),var(--gold2));color:#fff;border-radius:999px;padding:11px 18px;cursor:pointer;box-shadow:0 8px 18px rgba(168,121,54,.18)}
     .cartBtn span{background:#fff;color:var(--gold);border-radius:50%;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;margin-left:7px;font-size:13px}
+    .free-shipping-banner{max-width:760px;margin:18px auto 0;background:linear-gradient(135deg,rgba(168,121,54,.12),rgba(255,255,255,.72));border:1px solid var(--line);border-radius:999px;padding:12px 18px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--text);box-shadow:0 10px 24px rgba(89,55,24,.07);font-size:16px}
+    .free-shipping-banner b{color:var(--gold)}
+    .quick-added-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:rgba(79,59,45,.96);color:#fff;padding:13px 20px;border-radius:999px;box-shadow:0 14px 32px rgba(0,0,0,.18);z-index:80;opacity:0;pointer-events:none;transition:.25s;font-size:14px}
+    .quick-added-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
     .hero{max-width:1180px;margin:0 auto;padding:34px 20px 22px;text-align:center}
     .hero p{max-width:680px;margin:0 auto;color:var(--muted);font-size:18px;line-height:1.6}
     .brand-slogan{color:var(--gold);font-style:italic;font-size:30px;margin:0 0 10px}
@@ -83,6 +87,10 @@
     .freteBox{margin-top:16px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:18px}
     .freteBox input{width:100%;border-radius:14px;margin:10px 0}
     .freteResult{color:var(--muted);line-height:1.5}
+    .freeShipCart{margin-top:12px;padding:12px 14px;background:linear-gradient(135deg,#fff,rgba(168,121,54,.10));border:1px solid var(--line);border-radius:16px;color:var(--muted);line-height:1.45}
+    .freeShipCart b{color:var(--gold)}
+    .freeProgress{height:8px;background:#efe2d2;border-radius:999px;overflow:hidden;margin-top:8px}
+    .freeProgress span{display:block;height:100%;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:999px;transition:.25s}
     .whats{display:block;text-align:center;text-decoration:none;margin-top:16px;border-radius:999px;padding:14px;background:#25d366;color:#fff;font-weight:bold}
     .empty{text-align:center;color:var(--muted);padding:34px}
     .details{position:relative;z-index:2;margin:4vh auto;background:#fffaf3;border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);max-width:980px;max-height:92vh;overflow:auto;padding:22px}
@@ -122,6 +130,7 @@
       #mainDetailContentArea {height: 360px;}
       .cart{width:96vw}
       .whatsapp-bot-float { bottom: 16px; left: 16px; padding: 10px 14px; font-size: 13px; }
+      .free-shipping-banner{border-radius:18px;align-items:flex-start;text-align:center;font-size:14px;line-height:1.35;padding:12px 14px}
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -148,6 +157,7 @@
   <section class="hero">
     <div class="brand-slogan">Seu brilho, sua essência</div>
     <p>Peças e fragrâncias escolhidas para realçar sua beleza com delicadeza, elegância e personalidade.</p>
+    <div class="free-shipping-banner">✨ <span><b>Frete grátis</b> em pedidos acima de <b>R$ 350,00</b></span></div>
   </section>
   
   <main class="wrap">
@@ -189,6 +199,7 @@
       <button class="close" onclick="closeCart()">×</button>
       <h2>Seu carrinho</h2>
       <div id="cartItems"></div>
+      <div id="freeShipCart" class="freeShipCart"></div>
       <div class="freteBox">
         <b>Calcular frete estimado</b>
         <input id="cepInput" placeholder="Seu CEP" maxlength="9" oninput="maskCep(this)">
@@ -218,6 +229,7 @@
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     const WHATSAPP = '5511976359835';
+    const FREE_SHIPPING_MIN = 350;
     let currentCategory = 'todos'; let shipping = 0; let currentPhotoIndex = 0; let currentDetailId = null;
     let currentVarIndex = null;
 
@@ -310,7 +322,7 @@
         const labelHTML = isEsgotado ? `<div class="badge-esgotado">Fora de Estoque</div>` : '';
         const btnHTML = isEsgotado 
           ? `<button class="cartBtn btn-disabled" disabled>Fora de estoque</button>`
-          : `<button class="primary" onclick="event.stopPropagation();openDetails(${p.id})">${hasVar ? 'Ver Tamanhos' : 'Adicionar ao carrinho'}</button>`;
+          : `<button class="primary" onclick="quickAddFromCard(event, ${p.id})">${hasVar ? 'Ver opções' : 'Adicionar ao carrinho'}</button>`;
         
         const subText = p.subcategory || '';
         const marcaText = p.marca ? (subText ? ' • ' + p.marca : p.marca) : '';
@@ -408,7 +420,7 @@
         `;
       } else {
         acoesHTML = `
-          <button class="primary" onclick="addToCart(${p.id});closeDetails();openCart()">Adicionar ao carrinho</button>
+          <button class="primary" onclick="addToCart(${p.id}, true);closeDetails()">Adicionar ao carrinho</button>
           <br><br>
           <a class="whats" target="_blank" href="${singleWhats(p)}">Comprar este produto no WhatsApp</a>
         `;
@@ -448,8 +460,31 @@
     }
     function money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
     
-    function addToCart(id){
+    function quickAddFromCard(event, id){
+      event.stopPropagation();
+      const p = globalProducts.find(x => x.id === id);
+      if(!p) return;
+
+      if(p.variacoes && p.variacoes.length > 0){
+        openDetails(id);
+        return;
+      }
+
+      currentVarIndex = null;
+      addToCart(id, false);
+    }
+
+    function showQuickAdded(){
+      const toast = document.getElementById('quickAddedToast');
+      if(!toast) return;
+      toast.classList.add('show');
+      clearTimeout(window.quickAddedTimer);
+      window.quickAddedTimer = setTimeout(() => toast.classList.remove('show'), 1700);
+    }
+
+    function addToCart(id, abrirCarrinho = true){
       let p = globalProducts.find(x => x.id === id);
+      if(!p) return;
       let selectedVarObj = null;
       
       if(p.variacoes && p.variacoes.length > 0) {
@@ -457,6 +492,7 @@
          selectedVarObj = p.variacoes[currentVarIndex];
          if(Number(selectedVarObj.quantidade) <= 0) return;
       } else {
+         currentVarIndex = null;
          if((Number(p.quantidade) || 0) <= 0) return; 
       }
       
@@ -469,7 +505,8 @@
         cart.push({id, cartKey, varIndex: currentVarIndex, qty: 1});
       }
       
-      saveCart(); openCart();
+      saveCart();
+      if(abrirCarrinho) openCart(); else showQuickAdded();
     }
     
     function saveCart(){localStorage.setItem('chicMoodCartV4', JSON.stringify(cart)); renderCart()}
@@ -494,12 +531,30 @@
         return `<div class="item"><img src="${p.images?.[0]||fallbackImg}"><div><b>${pName}</b><br><small>${money(pPrice)}</small><div class="qty"><button onclick="changeQty('${i.cartKey}',-1)">-</button><span>${i.qty}</span><button onclick="changeQty('${i.cartKey}',1)">+</button></div></div><b>${money(pPrice*i.qty)}</b></div>`;
       }).join('') : '<div class="empty">Seu carrinho está vazio.</div>';
       
+      if(subtotal >= FREE_SHIPPING_MIN) shipping = 0;
+      renderFreeShippingNotice(subtotal);
       document.getElementById('subtotal').textContent = money(subtotal);
-      document.getElementById('shippingTotal').textContent = money(shipping);
+      document.getElementById('shippingTotal').textContent = subtotal >= FREE_SHIPPING_MIN ? 'Grátis' : money(shipping);
       document.getElementById('grandTotal').textContent = money(subtotal+shipping);
       document.getElementById('whatsBtn').href = whatsLink(subtotal);
     }
     
+    function renderFreeShippingNotice(subtotal){
+      const box = document.getElementById('freeShipCart');
+      if(!box) return;
+      const pct = Math.min(100, (subtotal / FREE_SHIPPING_MIN) * 100);
+      if(subtotal <= 0){
+        box.innerHTML = `<b>Frete grátis acima de ${money(FREE_SHIPPING_MIN)}</b><br>Adicione produtos ao carrinho para acompanhar seu benefício.<div class="freeProgress"><span style="width:0%"></span></div>`;
+        return;
+      }
+      if(subtotal >= FREE_SHIPPING_MIN){
+        box.innerHTML = `✨ <b>Você ganhou frete grátis!</b><br>Seu pedido passou de ${money(FREE_SHIPPING_MIN)}.<div class="freeProgress"><span style="width:100%"></span></div>`;
+        return;
+      }
+      const falta = FREE_SHIPPING_MIN - subtotal;
+      box.innerHTML = `Faltam <b>${money(falta)}</b> para você ganhar <b>frete grátis</b>.<div class="freeProgress"><span style="width:${pct}%"></span></div>`;
+    }
+
     function whatsLink(subtotal){
       let lines = cart.map(i => { 
         let p = globalProducts.find(x => x.id === i.id);
@@ -508,12 +563,24 @@
         return `- ${i.qty}x ${p.name}${extra} ${p.codigo ? `[Ref: ${p.codigo}]`:''}`; 
       }).join('\n');
       let cep = document.getElementById('cepInput')?.value || '';
-      return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Olá! Quero finalizar minha compra na Chic Mood.\n\nProdutos:\n${lines||'Carrinho vazio'}\n\nSubtotal: ${money(subtotal)}\nFrete estimado: ${money(shipping)}\nTotal estimado: ${money(subtotal+shipping)}\nCEP: ${cep}\n\nPor favor, confirme a disponibilidade dos itens.`)}`;
+      return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Olá! Quero finalizar minha compra na Chic Mood.\n\nProdutos:\n${lines||'Carrinho vazio'}\n\nSubtotal: ${money(subtotal)}\nFrete estimado: ${subtotal >= FREE_SHIPPING_MIN ? 'Grátis' : money(shipping)}\nTotal estimado: ${money(subtotal+shipping)}\nCEP: ${cep}\n\nPor favor, confirme a disponibilidade dos itens.`)}`;
     }
     
     function maskCep(el){el.value = el.value.replace(/\D/g,'').replace(/(\d{5})(\d)/,'$1-$2').slice(0,9)}
     function calculateShipping(){
       const cep = (document.getElementById('cepInput').value||'').replace(/\D/g,''); const result = document.getElementById('freteResult'); if(cep.length !== 8){result.textContent = 'Digite um CEP válido com 8 números.'; return}
+      const subtotalAtual = cart.reduce((total, i) => {
+        const p = globalProducts.find(x => x.id === i.id);
+        if(!p) return total;
+        const preco = i.varIndex !== null && p.variacoes?.[i.varIndex] ? Number(p.variacoes[i.varIndex].preco) : Number(p.price || 0);
+        return total + (preco * i.qty);
+      }, 0);
+      if(subtotalAtual >= FREE_SHIPPING_MIN){
+        shipping = 0;
+        result.innerHTML = `✨ Seu pedido passou de <b>${money(FREE_SHIPPING_MIN)}</b>. Frete grátis aplicado.`;
+        renderCart();
+        return;
+      }
       const first = Number(cep[0]);
       if(cep.startsWith('01')||cep.startsWith('02')||cep.startsWith('03')||cep.startsWith('04')||cep.startsWith('05')) shipping = 15;
       else if(first === 0 || first === 1 || first === 2 || first === 3) shipping = 22;
@@ -528,5 +595,6 @@
     async function init(){ await updateFilters(); await renderProducts(); renderCart(); }
     init();
   </script>
+  <div id="quickAddedToast" class="quick-added-toast">Produto adicionado ao carrinho ✨</div>
 </body>
 </html>
