@@ -113,7 +113,7 @@
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
     .product{position:relative; background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 14px 28px rgba(89,55,24,.08);cursor:pointer;transition:.2s; display:flex; flex-direction:column}
     .product:hover{transform:translateY(-3px)}
-    .product img{width:100%;height:230px;object-fit:cover;background:#f2e3d0}
+    .product img{width:100%;height:230px;object-fit:cover;background:#f2e3d0;content-visibility:auto}
     .product .info{padding:16px; display:flex; flex-direction:column; flex:1}
     .cat{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--gold)}
     .product h3{margin:8px 0 4px;font-size:20px}
@@ -371,7 +371,7 @@
         return matchesCat && matchesSub && matchesMarca && matchesQuery;
       });
       
-      document.getElementById('productsGrid').innerHTML = ps.length ? ps.map(p => {
+      document.getElementById('productsGrid').innerHTML = ps.length ? ps.map((p, index) => {
         const hasVar = p.variacoes && p.variacoes.length > 0;
         let displayPrice = '';
         let isEsgotado = false;
@@ -397,7 +397,7 @@
         
         return `<article class="product" onclick="openDetails(${p.id})">
           ${labelHTML}
-          <img src="${p.images?.[0]||fallbackImg}">
+          <img src="${p.images?.[0]||fallbackImg}" alt="${p.name || 'Produto Chic Mood'}" loading="${index < 4 ? 'eager' : 'lazy'}" decoding="async" fetchpriority="${index === 0 ? 'high' : 'low'}" onerror="this.onerror=null;this.src=fallbackImg">
           <div class="info">
             <div class="cat">${p.category==='semijoias'?'Semijoias':'Perfumes'}</div>
             <h3>${p.name}</h3>
@@ -470,10 +470,10 @@
         mainContentHTML = `<video class="mainDetailVideo" controls src="${videoSrc}" autoplay muted></video>`;
       } else {
         if (currentPhotoIndex === 'video') currentPhotoIndex = 0;
-        mainContentHTML = `<img src="${imgs[currentPhotoIndex] || imgs[0]}">`;
+        mainContentHTML = `<img src="${imgs[currentPhotoIndex] || imgs[0]}" alt="${p.name || 'Produto Chic Mood'}" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src=fallbackImg">`;
       }
       
-      let thumbsHTML = imgs.map((img, i) => `<img class="${i === currentPhotoIndex ? 'active' : ''}" src="${img}" onclick="currentPhotoIndex=${i}; renderDetails()">`).join('');
+      let thumbsHTML = imgs.map((img, i) => `<img class="${i === currentPhotoIndex ? 'active' : ''}" src="${img}" alt="Miniatura ${i + 1}" loading="lazy" decoding="async" onclick="currentPhotoIndex=${i}; renderDetails()" onerror="this.onerror=null;this.src=fallbackImg">`).join('');
       if (videoSrc !== '') {
         thumbsHTML += `<div class="thumb-video ${currentPhotoIndex === 'video' ? 'active' : ''}" onclick="currentPhotoIndex='video'; renderDetails()"><span class="play-icon">▶</span></div>`;
       }
@@ -596,7 +596,7 @@
         }
         
         subtotal += pPrice * i.qty;
-        return `<div class="item"><img src="${p.images?.[0]||fallbackImg}"><div><b>${pName}</b><br><small>${money(pPrice)}</small><div class="qty"><button onclick="changeQty('${i.cartKey}',-1)">-</button><span>${i.qty}</span><button onclick="changeQty('${i.cartKey}',1)">+</button></div></div><b>${money(pPrice*i.qty)}</b></div>`;
+        return `<div class="item"><img src="${p.images?.[0]||fallbackImg}" alt="${p.name || 'Produto'}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=fallbackImg"><div><b>${pName}</b><br><small>${money(pPrice)}</small><div class="qty"><button onclick="changeQty('${i.cartKey}',-1)">-</button><span>${i.qty}</span><button onclick="changeQty('${i.cartKey}',1)">+</button></div></div><b>${money(pPrice*i.qty)}</b></div>`;
       }).join('') : '<div class="empty">Seu carrinho está vazio.</div>';
       
       if(subtotal >= FREE_SHIPPING_MIN) shipping = 0;
