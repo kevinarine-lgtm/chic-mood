@@ -84,6 +84,17 @@
     .previewImgs div { text-align: center; }
     .previewImgs img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
 
+    .optimizer-box { background: linear-gradient(135deg, var(--gold-light), #fff); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 20px; }
+    .optimizer-head { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; }
+    .optimizer-head strong { color:var(--gold); display:block; margin-bottom:4px; }
+    .optimizer-head p { margin:0; color:var(--muted); font-size:13px; line-height:1.45; }
+    .optimizer-progress { display:none; margin-top:14px; }
+    .optimizer-progress.show { display:block; }
+    .optimizer-bar { height:10px; background:#eadfce; border-radius:999px; overflow:hidden; }
+    .optimizer-bar span { display:block; width:0%; height:100%; background:linear-gradient(135deg,var(--gold),var(--gold2)); transition:width .25s ease; }
+    .optimizer-status { margin-top:8px; font-size:13px; color:var(--muted); }
+    .primary:disabled, .success:disabled { opacity:.6; cursor:not-allowed; transform:none !important; }
+
     @media(max-width: 900px) {
       body { flex-direction: column; background: linear-gradient(180deg, var(--sidebar-bg), var(--bg) 260px); }
       #loginBox { width: calc(100% - 32px); margin: 9vh auto; padding: 28px 20px; }
@@ -262,6 +273,21 @@
           <span id="totalCount" style="color:var(--muted); font-size:14px; font-weight:bold;">Carregando...</span>
         </div>
 
+
+        <div class="optimizer-box">
+          <div class="optimizer-head">
+            <div>
+              <strong>Otimização automática das fotos antigas</strong>
+              <p>Um único clique otimiza todas as imagens antigas do catálogo. Produtos e dados permanecem intactos.</p>
+            </div>
+            <button id="optimizeAllBtn" class="primary" onclick="optimizeAllOldImages()">⚡ Otimizar todas as fotos</button>
+          </div>
+          <div id="optimizerProgress" class="optimizer-progress">
+            <div class="optimizer-bar"><span id="optimizerBar"></span></div>
+            <div id="optimizerStatus" class="optimizer-status">Preparando...</div>
+          </div>
+        </div>
+
         <div class="admin-filters">
           <select id="filterAdminCat" onchange="renderAdmin()">
             <option value="todos">Todas as Categorias</option>
@@ -343,10 +369,164 @@
     function removeImg(i){editingImages.splice(i,1);renderPreview()}
 
     document.getElementById('photos').addEventListener('change', async function(){
-      for(const f of [...this.files]){ localSelectedFiles.push(f); editingImages.push(await fileToData(f)); }
+      for(const f of [...this.files]){
+        if(!f.type.startsWith('image/')) continue;
+        localSelectedFiles.push(f);
+        editingImages.push(await fileToData(f));
+      }
       renderPreview();
     });
     function fileToData(file){return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file)})}
+
+    async function optimizeImageForUpload(file){
+      if(!file.type.startsWith('image/')) return file;
+
+      const image = await new Promise((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => { URL.revokeObjectURL(objectUrl); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Não foi possível processar a imagem.')); };
+        img.src = objectUrl;
+      });
+
+      const maxDimension = 1400;
+      const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+      const width = Math.max(1, Math.round(image.width * scale));
+      const height = Math.max(1, Math.round(image.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d', { alpha: false });
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(image, 0, 0, width, height);
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+      if(!blob) return file;
+
+      const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
+      return new File([blob], `${baseName}.webp`, { type: 'image/webp', lastModified: Date.now() });
+    }
+
+
+    function isAlreadyOptimizedImage(url){
+      if(!url || url.startsWith('data:image')) return true;
+      const clean = url.split('?')[0].toLowerCase();
+      return clean.endsWith('.webp') || clean.includes('/optimized_');
+    }
+
+    async function downloadImageAsFile(url, productId, imageIndex){
+      const response = await fetch(url, { cache: 'no-store' });
+      if(!response.ok) throw new Error(`Falha ao baixar imagem (${response.status})`);
+      const blob = await response.blob();
+      if(!blob.type.startsWith('image/')) throw new Error('O arquivo baixado não é uma imagem válida.');
+      const ext = (blob.type.split('/')[1] || 'jpg').replace('jpeg','jpg');
+      return new File([blob], `produto_${productId}_${imageIndex}.${ext}`, { type: blob.type });
+    }
+
+    async function optimizeAllOldImages(){
+      const button = document.getElementById('optimizeAllBtn');
+      const progress = document.getElementById('optimizerProgress');
+      const bar = document.getElementById('optimizerBar');
+      const status = document.getElementById('optimizerStatus');
+
+      if(!confirm('O painel vai otimizar automaticamente todas as fotos antigas do catálogo. Deseja continuar?')) return;
+
+      button.disabled = true;
+      button.textContent = 'Otimizando...';
+      progress.classList.add('show');
+      bar.style.width = '0%';
+      status.textContent = 'Buscando produtos...';
+
+      let totalImages = 0;
+      let processedImages = 0;
+      let optimizedImages = 0;
+      let skippedImages = 0;
+      let failedImages = 0;
+      let updatedProducts = 0;
+
+      try {
+        const products = await fetchProductsFromNuvem();
+        const pending = products.flatMap(p => (p.images || []).map((url, index) => ({ product: p, url, index })))
+          .filter(item => !isAlreadyOptimizedImage(item.url));
+        totalImages = pending.length;
+
+        if(totalImages === 0){
+          bar.style.width = '100%';
+          status.textContent = 'Todas as fotos já estão otimizadas.';
+          alert('✅ Todas as fotos do catálogo já estão otimizadas.');
+          return;
+        }
+
+        const productsToProcess = products.filter(p => (p.images || []).some(url => !isAlreadyOptimizedImage(url)));
+
+        for(let productPosition = 0; productPosition < productsToProcess.length; productPosition++) {
+          const product = productsToProcess[productPosition];
+          const originalImages = [...(product.images || [])];
+          const newImages = [...originalImages];
+          let productChanged = false;
+
+          for(let imageIndex = 0; imageIndex < originalImages.length; imageIndex++) {
+            const imageUrl = originalImages[imageIndex];
+            if(isAlreadyOptimizedImage(imageUrl)) {
+              skippedImages++;
+              continue;
+            }
+
+            status.textContent = `Produto ${productPosition + 1} de ${productsToProcess.length}: ${product.name} — foto ${imageIndex + 1} de ${originalImages.length}`;
+
+            try {
+              const downloadedFile = await downloadImageAsFile(imageUrl, product.id, imageIndex);
+              const optimizedFile = await optimizeImageForUpload(downloadedFile);
+              const storageName = `optimized_${product.id}_${Date.now()}_${imageIndex}_${Math.random().toString(36).slice(2,8)}.webp`;
+              const { error: uploadError } = await db.storage.from('fotos-produtos').upload(storageName, optimizedFile, {
+                cacheControl: '31536000',
+                upsert: false,
+                contentType: 'image/webp'
+              });
+              if(uploadError) throw uploadError;
+
+              const { data: publicData } = db.storage.from('fotos-produtos').getPublicUrl(storageName);
+              if(!publicData?.publicUrl) throw new Error('Não foi possível gerar o novo link da imagem.');
+
+              newImages[imageIndex] = publicData.publicUrl;
+              productChanged = true;
+              optimizedImages++;
+            } catch(error) {
+              console.error(`Erro ao otimizar ${product.name}, imagem ${imageIndex + 1}:`, error);
+              failedImages++;
+            } finally {
+              processedImages++;
+              const percent = Math.round((processedImages / totalImages) * 100);
+              bar.style.width = `${percent}%`;
+            }
+          }
+
+          if(productChanged) {
+            const { error: updateError } = await db.from('produtos').update({ images: newImages }).eq('id', product.id);
+            if(updateError) {
+              console.error(`Erro ao atualizar produto ${product.name}:`, updateError);
+              failedImages += newImages.filter((url, i) => url !== originalImages[i]).length;
+              optimizedImages -= newImages.filter((url, i) => url !== originalImages[i]).length;
+            } else {
+              updatedProducts++;
+            }
+          }
+        }
+
+        bar.style.width = '100%';
+        status.textContent = `Concluído: ${optimizedImages} foto(s) otimizadas em ${updatedProducts} produto(s).${failedImages ? ` ${failedImages} falha(s).` : ''}`;
+        await renderAdmin();
+        alert(`✅ Otimização concluída!\n\nFotos otimizadas: ${optimizedImages}\nProdutos atualizados: ${updatedProducts}\nFalhas: ${failedImages}`);
+      } catch(error) {
+        console.error(error);
+        status.textContent = `Erro: ${error.message || error}`;
+        alert(`Não foi possível concluir a otimização: ${error.message || error}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = '⚡ Otimizar todas as fotos';
+      }
+    }
 
     function formatText(command) {
       document.execCommand(command, false, null);
@@ -370,12 +550,22 @@
 
       let finalImages = editingImages.filter(img => !img.startsWith('data:image'));
       if(localSelectedFiles.length > 0) {
-        for(const file of localSelectedFiles) {
-          const uniqueName = `${Date.now()}_${file.name}`;
-          const { data, error } = await db.storage.from('fotos-produtos').upload(uniqueName, file);
-          if(!error) {
+        for(const originalFile of localSelectedFiles) {
+          try {
+            const file = await optimizeImageForUpload(originalFile);
+            const uniqueName = `${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name}`;
+            const { error } = await db.storage.from('fotos-produtos').upload(uniqueName, file, {
+              cacheControl: '31536000',
+              upsert: false,
+              contentType: file.type
+            });
+            if(error) throw error;
             const { data: publicData } = db.storage.from('fotos-produtos').getPublicUrl(uniqueName);
             finalImages.push(publicData.publicUrl);
+          } catch(err) {
+            console.error('Erro ao enviar imagem:', err);
+            alert(`Não foi possível enviar a imagem ${originalFile.name}.`);
+            return;
           }
         }
       }
@@ -402,11 +592,28 @@
       renderPreview(); renderVariacoes(); switchTab('form'); window.scrollTo({top:0,behavior:'smooth'});
     }
 
-    async function registrarVenda(id){
-      const ps = await fetchProductsFromNuvem(); const p = ps.find(x=>x.id===id); if(!p) return;
-      if(p.variacoes?.length > 0) { alert('Abra em "Editar" para reduzir o ML correto.'); return; }
-      let novaQtd = (p.quantidade || 0) - 1; if(novaQtd < 0) return;
-      await db.from('produtos').update({ Float: false, quantidade: novaQtd }).eq('id', id); renderAdmin();
+    async function registrarVenda(id, button){
+      if(button) { button.disabled = true; button.textContent = 'Baixando...'; }
+      try {
+        const ps = await fetchProductsFromNuvem();
+        const p = ps.find(x=>x.id===id);
+        if(!p) throw new Error('Produto não encontrado.');
+        if(p.variacoes?.length > 0) { alert('Abra em "Editar" para reduzir o ML correto.'); return; }
+
+        const estoqueAtual = Number(p.quantidade) || 0;
+        if(estoqueAtual <= 0) { alert('Este produto já está sem estoque.'); return; }
+
+        const novaQtd = estoqueAtual - 1;
+        const { error } = await db.from('produtos').update({ quantidade: novaQtd }).eq('id', id);
+        if(error) throw error;
+
+        await renderAdmin();
+      } catch(error) {
+        console.error(error);
+        alert(`Não foi possível dar baixa no estoque: ${error.message || error}`);
+      } finally {
+        if(button && document.body.contains(button)) { button.disabled = false; button.textContent = 'Baixa (-1)'; }
+      }
     }
 
     async function deleteProduct(id){ if(confirm('Excluir permanentemente?')) { await db.from('produtos').delete().eq('id', id); renderAdmin(); } }
@@ -438,14 +645,14 @@
         const estoqueStatus = temVar ? `<span style="color:var(--gold)">Várias opções (ML)</span>` : (p.quantidade <= 0 ? '<span style="color:#9b2f2f">Esgotado</span>' : `Estoque: ${p.quantidade}`);
         const precoDisplay = temVar ? `A partir de ${money(Math.min(...p.variacoes.map(v => v.preco)))}` : money(p.price);
         return `<div class="adminProduct">
-          <img src="${p.images?.[0]||fallbackImg}">
+          <img src="${p.images?.[0]||fallbackImg}" alt="${p.name || 'Produto'}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=fallbackImg">
           <div>
             <h4 style="margin:0 0 4px; font-size:16px;">${p.name}</h4>
             <small style="color:var(--muted)">${p.subcategory||''} ${p.marca ? '• '+p.marca : ''}</small>
             <div style="font-size:13px; margin-top:4px; font-weight:bold;">${precoDisplay} | ${estoqueStatus}</div>
           </div>
           <div class="prod-actions">
-            ${!temVar ? `<button class="success" onclick="registrarVenda(${p.id})">Baixa (-1)</button>` : ''}
+            ${!temVar ? `<button class="success" ${Number(p.quantidade) <= 0 ? 'disabled' : ''} onclick="registrarVenda(${p.id}, this)">${Number(p.quantidade) <= 0 ? 'Sem estoque' : 'Baixa (-1)'}</button>` : ''}
             <button class="ghost" style="padding:6px 14px; font-size:13px;" onclick="editProduct(${p.id})">Editar</button> 
             <button class="danger" onclick="deleteProduct(${p.id})">Apagar</button>
           </div>
