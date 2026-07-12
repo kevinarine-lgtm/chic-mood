@@ -587,6 +587,7 @@
     // CONEXÃO COM A PLANILHA NOVA: cole abaixo a URL /exec da implantação e a mesma chave do Code.gs.
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzp8uuxyzFKlOTQEkhhzT1_if6Lksbyst4fOA5eS3z-D-2oB-ph4MMw8QBtK6v929lA/exec';
     const APPS_SCRIPT_TOKEN = 'ChicMood_2026_K7M9_X4P2';
+    const PLANILHA_BRIDGE_VERSION = '2026-07-12-final-jsonp';
     const sheetPendingRequests = new Map();
     let editingId=null; let editingImages=[]; let editingVideo=''; let localSelectedFiles=[];
     let productVariacoes = [];
@@ -963,39 +964,98 @@
     function receiptNumber(n){return String(n||0).padStart(3,'0')}
     function dateBR(value){return new Date(value).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}
 
+    function sheetJsonpPoll(requestId, deadline, resolve, reject, iframe){
+      const attempt=()=>{
+        if(Date.now()>deadline){
+          try{iframe.remove()}catch(_){}
+          sheetPendingRequests.delete(requestId);
+          reject(new Error('A planilha demorou para responder. Verifique se a implantacao esta como Qualquer pessoa e se foi publicada em uma nova versao.'));
+          return;
+        }
 
-    window.addEventListener('message',event=>{
-      const data=event.data;
-      if(!data||data.chicMoodBridge!==true||!data.requestId)return;
-      const pending=sheetPendingRequests.get(data.requestId);
-      if(!pending)return;
-      clearTimeout(pending.timer);
-      pending.iframe.remove();
-      sheetPendingRequests.delete(data.requestId);
-      if(data.ok)pending.resolve(data.result);
-      else pending.reject(new Error(data.error||'Falha na comunicação com a planilha.'));
-    });
+        const callbackName=`__chicMoodSheet_${requestId.replace(/[^a-zA-Z0-9_$]/g,'_')}_${Date.now()}`;
+        const script=document.createElement('script');
+        let finished=false;
 
-    function sheetRequest(action,payload={},timeout=60000){
+        const cleanup=()=>{
+          if(finished)return;
+          finished=true;
+          try{delete window[callbackName]}catch(_){window[callbackName]=undefined}
+          try{script.remove()}catch(_){}
+        };
+
+        window[callbackName]=(data)=>{
+          cleanup();
+          if(!data||data.chicMoodBridge!==true){
+            setTimeout(attempt,700);
+            return;
+          }
+          if(data.pending===true){
+            setTimeout(attempt,700);
+            return;
+          }
+
+          try{iframe.remove()}catch(_){}
+          sheetPendingRequests.delete(requestId);
+          if(data.ok)resolve(data.result);
+          else reject(new Error(data.error||'Falha na comunicacao com a planilha.'));
+        };
+
+        script.onerror=()=>{
+          cleanup();
+          setTimeout(attempt,900);
+        };
+
+        const qs=new URLSearchParams({
+          action:'poll',
+          requestId,
+          token:APPS_SCRIPT_TOKEN,
+          callback:callbackName,
+          _:String(Date.now())
+        });
+        script.src=`${APPS_SCRIPT_URL}?${qs.toString()}`;
+        document.head.appendChild(script);
+      };
+
+      attempt();
+    }
+
+    function sheetRequest(action,payload={},timeout=180000){
       if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL.includes('COLE_AQUI'))return Promise.reject(new Error('Cole a URL /exec do Apps Script em APPS_SCRIPT_URL.'));
       if(!APPS_SCRIPT_TOKEN||APPS_SCRIPT_TOKEN.includes('TROQUE_POR'))return Promise.reject(new Error('Defina a mesma chave do Code.gs em APPS_SCRIPT_TOKEN.'));
+
       return new Promise((resolve,reject)=>{
         const requestId=`sheet_${Date.now()}_${Math.random().toString(36).slice(2)}`;
         const iframe=document.createElement('iframe');
         iframe.name=`frame_${requestId}`;
         iframe.style.display='none';
+        iframe.setAttribute('aria-hidden','true');
         document.body.appendChild(iframe);
+
         const form=document.createElement('form');
-        form.method='POST';form.action=APPS_SCRIPT_URL;form.target=iframe.name;form.acceptCharset='UTF-8';form.style.display='none';
+        form.method='POST';
+        form.action=APPS_SCRIPT_URL;
+        form.target=iframe.name;
+        form.acceptCharset='UTF-8';
+        form.style.display='none';
+
         const fields={action,requestId,token:APPS_SCRIPT_TOKEN,payload:JSON.stringify(payload||{})};
-        Object.entries(fields).forEach(([name,value])=>{const input=document.createElement('input');input.type='hidden';input.name=name;input.value=value;form.appendChild(input)});
+        Object.entries(fields).forEach(([name,value])=>{
+          const input=document.createElement('input');
+          input.type='hidden';
+          input.name=name;
+          input.value=value;
+          form.appendChild(input);
+        });
+
         document.body.appendChild(form);
-        const timer=setTimeout(()=>{
-          form.remove();iframe.remove();sheetPendingRequests.delete(requestId);
-          reject(new Error('A planilha demorou para responder. Confira a implantação do Apps Script.'));
-        },timeout);
-        sheetPendingRequests.set(requestId,{resolve,reject,timer,iframe});
-        form.submit();form.remove();
+        sheetPendingRequests.set(requestId,{iframe});
+
+        // Inicia a consulta antes do POST. Se o processamento ainda nao terminou,
+        // o Apps Script retorna pending e o painel continua consultando.
+        sheetJsonpPoll(requestId,Date.now()+timeout,resolve,reject,iframe);
+        form.submit();
+        form.remove();
       });
     }
 
