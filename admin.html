@@ -62,7 +62,7 @@
     /* BOTÕES MÁSTER */
     .btn-container { display: flex; gap: 12px; margin-top: 20px; }
     .primary { background: linear-gradient(135deg, var(--gold), var(--gold2)); color: #fff; border: none; padding: 14px 24px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 15px; box-shadow: 0 4px 15px rgba(168,121,54,0.2); }
-    .primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(168,121,54,0.3); }
+    .primary:hover { transform: translateY(-2px); box-sizing: 0 6px 20px rgba(168,121,54,0.3); }
     .ghost { background: var(--card); color: var(--gold); border: 1px solid var(--border); padding: 14px 24px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 15px; }
     .ghost:hover { background: var(--gold-light); }
     .danger { background: #fff; color: #9b2f2f; border: 1px solid rgba(155,47,47,0.2); padding: 8px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; }
@@ -94,6 +94,7 @@
     .optimizer-bar span { display:block; width:0%; height:100%; background:linear-gradient(135deg,var(--gold),var(--gold2)); transition:width .25s ease; }
     .optimizer-status { margin-top:8px; font-size:13px; color:var(--muted); }
     .primary:disabled, .success:disabled { opacity:.6; cursor:not-allowed; transform:none !important; }
+
 
     .sheet-status{display:inline-flex;align-items:center;gap:7px;margin-top:10px;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border);background:#fff;color:var(--muted)}
     .sheet-status:before{content:"";width:8px;height:8px;border-radius:50%;background:#c08a3e;box-shadow:0 0 0 4px rgba(192,138,62,.12)}
@@ -147,6 +148,7 @@
       .editor-toolbar { overflow-x: auto; }
     }
 
+
     /* VENDAS E RECIBOS */
     .sales-layout{display:grid;grid-template-columns:1.05fr .95fr;gap:22px;align-items:start}
     .sale-product-list{display:grid;gap:10px;max-height:520px;overflow:auto;padding-right:4px}
@@ -180,6 +182,7 @@
     @media(max-width:900px){.sales-layout{grid-template-columns:1fr}.sales-search{grid-template-columns:1fr}.receipt-grid{grid-template-columns:1fr}}
     @media(max-width:560px){.extras-entry{grid-template-columns:1fr}.extra-row{grid-template-columns:1fr auto}.extra-row .danger{grid-column:1/-1;width:100%}}
 
+
     /* PAINEL DE CONTROLE DE VENDAS */
     .dashboard-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:22px}
     .dashboard-head h2{margin:0}
@@ -203,6 +206,7 @@
     @media(max-width:1000px){.dashboard-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-columns{grid-template-columns:1fr}}
     @media(max-width:560px){.dashboard-cards{grid-template-columns:1fr}.metric-value{font-size:28px}.dashboard-filter{width:100%;min-width:0}}
 
+
     /* VENDA HISTORICA E CONTROLE DE GASTOS */
     .history-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
     .manual-item-builder{display:grid;grid-template-columns:1.5fr 90px 130px 130px auto;gap:10px;align-items:end}
@@ -219,10 +223,20 @@
     .origin-pill{display:inline-flex;padding:4px 8px;border-radius:999px;background:var(--gold-light);color:var(--gold);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
     @media(max-width:1000px){.history-layout{grid-template-columns:1fr}.manual-item-builder{grid-template-columns:1fr 90px 1fr 1fr}.manual-item-builder button{grid-column:1/-1}}
     @media(max-width:700px){.expense-filters,.expense-metrics{grid-template-columns:1fr}.expense-row{grid-template-columns:1fr auto}.expense-row .expense-date{grid-column:1/-1}.expense-row .danger{grid-column:1/-1;width:100%}.manual-item-builder{grid-template-columns:1fr}.manual-item-builder button{grid-column:auto}.manual-item-row{grid-template-columns:1fr auto}.manual-item-row .danger{grid-column:1/-1;width:100%}}
+
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+  <!-- Ponte invisível entre este painel e a Google Planilha. -->
+  <iframe
+    id="sheetBridgeFrame"
+    title="Ponte Google Planilha"
+    src="https://script.google.com/macros/s/AKfycbzp8uuxyzFKlOTQEkhhzT1_if6Lksbyst4fOA5eS3z-D-2oB-ph4MMw8QBtK6v929lA/exec"
+    style="position:fixed;width:1px;height:1px;left:-9999px;top:-9999px;border:0;opacity:0;pointer-events:none"
+    aria-hidden="true"
+  ></iframe>
+
 
   <section id="loginBox">
     <h1>Chic Mood Admin</h1>
@@ -404,6 +418,7 @@
           <span id="totalCount" style="color:var(--muted); font-size:14px; font-weight:bold;">Carregando...</span>
         </div>
 
+
         <div class="optimizer-box">
           <div class="optimizer-head">
             <div>
@@ -434,6 +449,7 @@
 
         <div id="adminList"></div>
       </div>
+
 
       <div id="tabSale" class="page-section">
         <h2>Efetuar uma compra</h2>
@@ -471,6 +487,7 @@
           </div>
         </div>
       </div>
+
 
       <div id="tabManualSale" class="page-section">
         <h2>Registrar venda anterior</h2>
@@ -576,9 +593,10 @@
     
     const ADMIN_PASSWORD='px0507cx';
     const RECEIPTS_BUCKET = 'recibos-vendas';
+    // CONEXÃO COM A PLANILHA NOVA: cole abaixo a URL /exec da implantação e a mesma chave do Code.gs.
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzp8uuxyzFKlOTQEkhhzT1_if6Lksbyst4fOA5eS3z-D-2oB-ph4MMw8QBtK6v929lA/exec';
     const APPS_SCRIPT_TOKEN = 'ChicMood_2026_K7M9_X4P2';
-    const PLANILHA_BRIDGE_VERSION = '2026-07-12-final-jsonp';
+    const PLANILHA_BRIDGE_VERSION = '2026-07-12-html-bridge-v1';
     const sheetPendingRequests = new Map();
     let editingId=null; let editingImages=[]; let editingVideo=''; let localSelectedFiles=[];
     let productVariacoes = [];
@@ -690,6 +708,7 @@
       const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
       return new File([blob], `${baseName}.webp`, { type: 'image/webp', lastModified: Date.now() });
     }
+
 
     function isAlreadyOptimizedImage(url){
       if(!url || url.startsWith('data:image')) return true;
@@ -942,6 +961,7 @@
       }).join('');
     }
 
+
     function setBusy(show, text='Processando...'){
       let overlay=document.getElementById('globalLoading');
       if(!overlay){overlay=document.createElement('div');overlay.id='globalLoading';overlay.className='loading-overlay';overlay.innerHTML='<div class="loading-box" id="globalLoadingText"></div>';document.body.appendChild(overlay)}
@@ -953,96 +973,111 @@
     function receiptNumber(n){return String(n||0).padStart(3,'0')}
     function dateBR(value){return new Date(value).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}
 
-    function sheetJsonpPoll(requestId, deadline, resolve, reject, iframe){
-      const attempt=()=>{
-        if(Date.now()>deadline){
-          try{iframe.remove()}catch(_){}
-          sheetPendingRequests.delete(requestId);
-          reject(new Error('A planilha demorou para responder. Verifique se a implantacao esta como Qualquer pessoa e se foi publicada em uma nova versao.'));
-          return;
-        }
+    const sheetBridgeState = {
+      ready: false,
+      readyPromise: null,
+      readyResolve: null,
+      readyReject: null,
+      pending: new Map()
+    };
 
-        const callbackName=`__chicMoodSheet_${requestId.replace(/[^a-zA-Z0-9_$]/g,'_')}_${Date.now()}`;
-        const script=document.createElement('script');
-        let finished=false;
+    function resetSheetBridgeReadyPromise(){
+      sheetBridgeState.readyPromise = new Promise((resolve,reject)=>{
+        sheetBridgeState.readyResolve = resolve;
+        sheetBridgeState.readyReject = reject;
+      });
+    }
+    resetSheetBridgeReadyPromise();
 
-        const cleanup=()=>{
-          if(finished)return;
-          finished=true;
-          try{delete window[callbackName]}catch(_){window[callbackName]=undefined}
-          try{script.remove()}catch(_){}
-        };
+    window.addEventListener('message',(event)=>{
+      const data=event.data;
+      if(!data||typeof data!=='object')return;
 
-        window[callbackName]=(data)=>{
-          cleanup();
-          if(!data||data.chicMoodBridge!==true){
-            setTimeout(attempt,700);
-            return;
-          }
-          if(data.pending===true){
-            setTimeout(attempt,700);
-            return;
-          }
+      if(data.type==='CHIC_MOOD_BRIDGE_READY'){
+        sheetBridgeState.ready=true;
+        if(sheetBridgeState.readyResolve)sheetBridgeState.readyResolve(data);
+        return;
+      }
 
-          try{iframe.remove()}catch(_){}
-          sheetPendingRequests.delete(requestId);
-          if(data.ok)resolve(data.result);
-          else reject(new Error(data.error||'Falha na comunicacao com a planilha.'));
-        };
+      if(data.type!=='CHIC_MOOD_BRIDGE_RESPONSE'||!data.requestId)return;
+      const pending=sheetBridgeState.pending.get(data.requestId);
+      if(!pending)return;
 
-        script.onerror=()=>{
-          cleanup();
-          setTimeout(attempt,900);
-        };
+      sheetBridgeState.pending.delete(data.requestId);
+      clearTimeout(pending.timer);
 
-        const qs=new URLSearchParams({
-          action:'poll',
-          requestId,
-          token:APPS_SCRIPT_TOKEN,
-          callback:callbackName,
-          _:String(Date.now())
-        });
-        script.src=`${APPS_SCRIPT_URL}?${qs.toString()}`;
-        document.head.appendChild(script);
-      };
+      if(data.ok){
+        pending.resolve(data.result);
+      }else{
+        pending.reject(new Error(data.error||'Falha ao acessar a Google Planilha.'));
+      }
+    });
 
-      attempt();
+    function reloadSheetBridge(){
+      const frame=document.getElementById('sheetBridgeFrame');
+      if(!frame)throw new Error('A ponte da Google Planilha não foi encontrada no painel.');
+      sheetBridgeState.ready=false;
+      resetSheetBridgeReadyPromise();
+      const separator=APPS_SCRIPT_URL.includes('?')?'&':'?';
+      frame.src=`${APPS_SCRIPT_URL}${separator}v=${Date.now()}`;
     }
 
-    function sheetRequest(action,payload={},timeout=180000){
-      if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL.includes('COLE_AQUI'))return Promise.reject(new Error('Cole a URL /exec do Apps Script em APPS_SCRIPT_URL.'));
-      if(!APPS_SCRIPT_TOKEN||APPS_SCRIPT_TOKEN.includes('TROQUE_POR'))return Promise.reject(new Error('Defina a mesma chave do Code.gs em APPS_SCRIPT_TOKEN.'));
+    async function waitForSheetBridge(timeout=20000){
+      if(sheetBridgeState.ready)return true;
+
+      const frame=document.getElementById('sheetBridgeFrame');
+      if(!frame)throw new Error('A ponte da Google Planilha não foi encontrada.');
+
+      if(!frame.src||!frame.src.includes('/exec'))reloadSheetBridge();
+
+      let timer;
+      try{
+        await Promise.race([
+          sheetBridgeState.readyPromise,
+          new Promise((_,reject)=>{
+            timer=setTimeout(()=>reject(new Error(
+              'A ponte da Google Planilha não abriu. No Apps Script, publique como Aplicativo da Web, Executar como: Eu, acesso: Qualquer pessoa, e escolha Nova versão.'
+            )),timeout);
+          })
+        ]);
+        return true;
+      }finally{
+        clearTimeout(timer);
+      }
+    }
+
+    async function sheetRequest(action,payload={},timeout=90000){
+      if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL.includes('COLE_AQUI')){
+        throw new Error('A URL /exec do Apps Script não foi configurada.');
+      }
+      if(!APPS_SCRIPT_TOKEN||APPS_SCRIPT_TOKEN.includes('TROQUE_POR')){
+        throw new Error('A chave de integração da planilha não foi configurada.');
+      }
+
+      await waitForSheetBridge(20000);
+
+      const frame=document.getElementById('sheetBridgeFrame');
+      if(!frame||!frame.contentWindow){
+        throw new Error('A ponte da Google Planilha não está disponível.');
+      }
+
+      const requestId=`bridge_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
       return new Promise((resolve,reject)=>{
-        const requestId=`sheet_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        const iframe=document.createElement('iframe');
-        iframe.name=`frame_${requestId}`;
-        iframe.style.display='none';
-        iframe.setAttribute('aria-hidden','true');
-        document.body.appendChild(iframe);
+        const timer=setTimeout(()=>{
+          sheetBridgeState.pending.delete(requestId);
+          reject(new Error('A Google Planilha demorou além do esperado. Nenhum dado foi confirmado; tente novamente após atualizar a página.'));
+        },timeout);
 
-        const form=document.createElement('form');
-        form.method='POST';
-        form.action=APPS_SCRIPT_URL;
-        form.target=iframe.name;
-        form.acceptCharset='UTF-8';
-        form.style.display='none';
-
-        const fields={action,requestId,token:APPS_SCRIPT_TOKEN,payload:JSON.stringify(payload||{})};
-        Object.entries(fields).forEach(([name,value])=>{
-          const input=document.createElement('input');
-          input.type='hidden';
-          input.name=name;
-          input.value=value;
-          form.appendChild(input);
-        });
-
-        document.body.appendChild(form);
-        sheetPendingRequests.set(requestId,{iframe});
-
-        sheetJsonpPoll(requestId,Date.now()+timeout,resolve,reject,iframe);
-        form.submit();
-        form.remove();
+        sheetBridgeState.pending.set(requestId,{resolve,reject,timer});
+        frame.contentWindow.postMessage({
+          type:'CHIC_MOOD_BRIDGE_REQUEST',
+          requestId,
+          action,
+          payload:payload||{},
+          token:APPS_SCRIPT_TOKEN,
+          version:PLANILHA_BRIDGE_VERSION
+        },'*');
       });
     }
 
@@ -1052,8 +1087,22 @@
     }
 
     async function testSheetConnection(){
-      try{await sheetRequest('ping',{},30000);updateSheetConnectionStatus('connected','Google Planilha conectada')}
-      catch(e){updateSheetConnectionStatus('error',e.message||'Planilha desconectada');throw e}
+      updateSheetConnectionStatus('checking','Conectando à Google Planilha...');
+      try{
+        await sheetRequest('ping',{},30000);
+        updateSheetConnectionStatus('connected','Google Planilha conectada');
+        return true;
+      }catch(firstError){
+        try{
+          reloadSheetBridge();
+          await sheetRequest('ping',{},30000);
+          updateSheetConnectionStatus('connected','Google Planilha conectada');
+          return true;
+        }catch(finalError){
+          updateSheetConnectionStatus('error',finalError.message||'Planilha desconectada');
+          throw finalError;
+        }
+      }
     }
 
     function dashboardStartDate(period){
@@ -1380,19 +1429,11 @@
         const payment=document.getElementById('manualSalePayment').value;
         const note=document.getElementById('manualSaleNote').value.trim();
         const createdAt=new Date(dateValue).toISOString();
-        
-        const sheetItems=manualSaleItems.map(x=>({
-          produto_id:x.productId??null,
-          variacao_index:x.varIndex??null,
-          nome_produto:x.name,
-          variacao_nome:x.variationName||'',
-          quantidade:x.qty,
-          preco_unitario:x.price,
-          custo_unitario:x.cost,
-          total:x.price*x.qty,
-          imagem_url:x.image===fallbackImg?'':x.image
+        const items=manualSaleItems.map(x=>({
+          produto_id:x.productId??null,variacao_index:x.varIndex??null,nome_produto:x.name,
+          variacao_nome:x.variationName||'',quantidade:x.qty,preco_unitario:x.price,
+          custo_unitario:x.cost,total:x.price*x.qty,imagem_url:x.image===fallbackImg?'':x.image
         }));
-        
         const venda={numero_recibo:numero,cliente,forma_pagamento:payment,observacao:note,subtotal:totals.subtotal,total_adicionais:totals.extrasTotal,desconto:totals.discount,total:totals.total,adicionais,created_at:createdAt,origem:'historica'};
 
         setBusy(true,'Gerando o recibo da venda anterior...');
@@ -1402,8 +1443,7 @@
         if(upError)throw new Error(`Não foi possível salvar o recibo: ${upError.message}`);
         const {data:publicData}=db.storage.from(RECEIPTS_BUCKET).getPublicUrl(path);
         venda.recibo_url=publicData.publicUrl;
-        
-        await sheetRequest('saveSale',{sale:venda,items:sheetItems});
+        await sheetRequest('saveSale',{sale:venda,items});
 
         downloadBlob(receiptBlob,`Recibo_Chic_Mood_${receiptNumber(numero)}.jpg`);
         alert(`✅ Venda anterior registrada!\nRecibo nº ${receiptNumber(numero)}\nO estoque atual não foi alterado.`);
@@ -1450,6 +1490,27 @@
       expenseReceiptData=null;const input=document.getElementById('expenseReceipt');if(input)input.value='';const preview=document.getElementById('expenseReceiptPreview');if(preview){preview.classList.remove('show');preview.innerHTML=''}
     }
 
+    function dataUrlToBlob(dataUrl){
+      const parts=String(dataUrl||'').split(',');
+      if(parts.length!==2)throw new Error('Comprovante invalido.');
+      const mime=(parts[0].match(/data:([^;]+)/)||[])[1]||'image/webp';
+      const binary=atob(parts[1]);
+      const bytes=new Uint8Array(binary.length);
+      for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+      return new Blob([bytes],{type:mime});
+    }
+
+    async function uploadExpenseReceipt(){
+      if(!expenseReceiptData?.base64)return '';
+      const blob=dataUrlToBlob(expenseReceiptData.base64);
+      const extension=(expenseReceiptData.tipo||'image/webp').includes('png')?'png':((expenseReceiptData.tipo||'').includes('jpeg')?'jpg':'webp');
+      const path=`comprovantes-gastos/comprovante_${Date.now()}_${Math.random().toString(36).slice(2)}.${extension}`;
+      const {error}=await db.storage.from(RECEIPTS_BUCKET).upload(path,blob,{contentType:blob.type,cacheControl:'31536000',upsert:false});
+      if(error)throw new Error(`Nao foi possivel salvar o comprovante: ${error.message}`);
+      const {data}=db.storage.from(RECEIPTS_BUCKET).getPublicUrl(path);
+      return data.publicUrl;
+    }
+
     async function saveExpense(){
       const description=document.getElementById('expenseDescription').value.trim();
       const value=parseMoneyInput(document.getElementById('expenseValue').value);
@@ -1458,12 +1519,14 @@
       if(!description)return alert('Informe a descrição do gasto.');
       if(value<=0)return alert('Informe um valor maior que zero.');
       try{
+        setBusy(true,expenseReceiptData?'Salvando comprovante...':'Salvando gasto na Google Planilha...');
+        const comprovanteUrl=await uploadExpenseReceipt();
         setBusy(true,'Salvando gasto na Google Planilha...');
         await sheetRequest('saveExpense',{
           data:date,categoria:document.getElementById('expenseCategory').value,descricao:description,
           valor:value,forma_pagamento:document.getElementById('expensePayment').value,
           observacao:document.getElementById('expenseNote').value.trim(),
-          comprovante_base64:expenseReceiptData?.base64||'',comprovante_nome:expenseReceiptData?.nome||'',comprovante_tipo:expenseReceiptData?.tipo||''
+          comprovante_url:comprovanteUrl
         },90000);
         document.getElementById('expenseDescription').value='';
         document.getElementById('expenseValue').value='';
@@ -1512,7 +1575,7 @@
       const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const c=canvas.getContext('2d');
       c.fillStyle='#fffaf3';c.fillRect(0,0,W,H);c.strokeStyle='#b78335';c.lineWidth=3;c.strokeRect(20,20,W-40,H-40);c.strokeRect(32,32,W-64,H-64);
       c.textAlign='center';c.fillStyle='#a87936';c.font='italic 96px Georgia';c.fillText('Chic Mood',W/2,165);c.font='25px Georgia';c.fillText('S E M I J O I A S   •   P E R F U M E S',W/2,220);c.fillStyle='#2f2118';c.font='bold 64px Georgia';c.fillText('RECIBO DE VENDA',W/2,315);
-      
+      // Bloco superior do recibo dividido em 3 colunas, evitando textos fora do quadro.
       const infoX=70, infoY=355, infoW=W-140, infoH=110;
       const infoColW=infoW/3;
       roundRect(c,infoX,infoY,infoW,infoH,20);
