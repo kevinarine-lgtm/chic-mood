@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Chic Mood</title>
+  <!-- Versão Supabase: vendas, recibos, vendas anteriores e gastos -->
   <style>
     :root {
       --bg: #fdfbf7;
@@ -94,17 +95,6 @@
     .optimizer-bar span { display:block; width:0%; height:100%; background:linear-gradient(135deg,var(--gold),var(--gold2)); transition:width .25s ease; }
     .optimizer-status { margin-top:8px; font-size:13px; color:var(--muted); }
     .primary:disabled, .success:disabled { opacity:.6; cursor:not-allowed; transform:none !important; }
-
-
-    .sheet-status{display:inline-flex;align-items:center;gap:7px;margin-top:10px;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border);background:#fff;color:var(--muted)}
-    .sheet-status:before{content:"";width:8px;height:8px;border-radius:50%;background:#c08a3e;box-shadow:0 0 0 4px rgba(192,138,62,.12)}
-    .sheet-status.connected{color:#356244;background:#eff8f1;border-color:rgba(74,124,89,.22)}
-    .sheet-status.connected:before{background:#4a7c59;box-shadow:0 0 0 4px rgba(74,124,89,.12)}
-    .sheet-status.error{color:#8d3434;background:#fff2f2;border-color:rgba(155,47,47,.2)}
-    .sheet-status.error:before{background:#9b2f2f;box-shadow:0 0 0 4px rgba(155,47,47,.1)}
-    .expense-proof-preview{display:none;margin-top:10px;padding:10px;border:1px dashed var(--border);border-radius:12px;background:#fff}
-    .expense-proof-preview.show{display:flex;align-items:center;gap:12px}
-    .expense-proof-preview img{width:82px;height:82px;object-fit:cover;border-radius:10px;border:1px solid var(--border)}
 
     @media(max-width: 900px) {
       body { flex-direction: column; background: linear-gradient(180deg, var(--sidebar-bg), var(--bg) 260px); }
@@ -219,6 +209,10 @@
     .expense-list{display:grid;gap:10px}
     .expense-row{display:grid;grid-template-columns:130px 1fr auto auto;gap:14px;align-items:center;border:1px solid var(--border);border-radius:14px;padding:14px;background:#fff}
     .expense-row.cancelled{opacity:.65}
+    .expense-proof-preview{display:none;margin-top:10px;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+    .expense-proof-preview.show{display:flex}
+    .expense-proof-preview img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--border)}
+    .proof-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:var(--gold);font-weight:700;font-size:12px;margin-top:6px}
     .expense-value{font-family:Georgia,serif;color:#9b2f2f;font-size:20px;font-weight:700;white-space:nowrap}
     .origin-pill{display:inline-flex;padding:4px 8px;border-radius:999px;background:var(--gold-light);color:var(--gold);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
     @media(max-width:1000px){.history-layout{grid-template-columns:1fr}.manual-item-builder{grid-template-columns:1fr 90px 1fr 1fr}.manual-item-builder button{grid-column:1/-1}}
@@ -228,15 +222,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <!-- Ponte invisível entre este painel e a Google Planilha. -->
-  <iframe
-    id="sheetBridgeFrame"
-    title="Ponte Google Planilha"
-    src="https://script.google.com/macros/s/AKfycbzp8uuxyzFKlOTQEkhhzT1_if6Lksbyst4fOA5eS3z-D-2oB-ph4MMw8QBtK6v929lA/exec"
-    style="position:fixed;width:1px;height:1px;left:-9999px;top:-9999px;border:0;opacity:0;pointer-events:none"
-    aria-hidden="true"
-  ></iframe>
-
 
   <section id="loginBox">
     <h1>Chic Mood Admin</h1>
@@ -269,7 +254,7 @@
         <div class="dashboard-head">
           <div>
             <h2>Controle de vendas</h2>
-            <div style="color:var(--muted);font-size:14px;margin-top:6px">Acompanhe vendas, produtos vendidos e gastos armazenados na sua Google Planilha.</div><div id="sheetConnectionStatus" class="sheet-status checking">Verificando conexão com a planilha...</div>
+            <div style="color:var(--muted);font-size:14px;margin-top:6px">Acompanhe vendas concluídas, produtos vendidos e resultado financeiro.</div>
           </div>
           <div class="field-group dashboard-filter">
             <label>Período</label>
@@ -483,7 +468,7 @@
             <div id="saleSummary" class="sale-summary"></div>
             <div class="sale-total"><span>Total</span><span id="saleTotal">R$ 0,00</span></div>
             <button id="finishSaleBtn" class="primary" style="width:100%;margin-top:16px" onclick="finishSale()">Finalizar venda e gerar recibo</button>
-            <div class="sync-note">A baixa continua automática no Supabase. O controle da venda fica armazenado na Google Planilha e o recibo aparece com imagem.</div>
+            <div class="sync-note">A baixa é automática no estoque. A venda e a imagem do recibo ficam salvas online no Supabase.</div>
           </div>
         </div>
       </div>
@@ -552,7 +537,11 @@
             <div class="field-group"><label>Valor (R$)</label><input id="expenseValue" inputmode="decimal" placeholder="0,00"></div>
             <div class="field-group"><label>Pagamento</label><select id="expensePayment"><option>Pix</option><option>Dinheiro</option><option>Cartão de débito</option><option>Cartão de crédito</option><option>Transferência</option><option>Outro</option></select></div>
             <div class="field-group full"><label>Observação</label><textarea id="expenseNote" rows="2" placeholder="Detalhes opcionais"></textarea></div>
-            <div class="field-group full"><label>Comprovante em foto (opcional)</label><input id="expenseReceipt" type="file" accept="image/*" style="background:var(--sidebar-bg);padding:10px"><div id="expenseReceiptPreview" class="expense-proof-preview"></div></div>
+            <div class="field-group full">
+              <label>Comprovante (opcional)</label>
+              <input id="expenseProof" type="file" accept="image/*" style="background:var(--sidebar-bg);padding:10px" onchange="previewExpenseProof()">
+              <div id="expenseProofPreview" class="expense-proof-preview"></div>
+            </div>
           </div>
           <button class="primary" style="margin-top:16px" onclick="saveExpense()">Salvar gasto</button>
         </section>
@@ -593,11 +582,6 @@
     
     const ADMIN_PASSWORD='px0507cx';
     const RECEIPTS_BUCKET = 'recibos-vendas';
-    // CONEXÃO COM A PLANILHA NOVA: cole abaixo a URL /exec da implantação e a mesma chave do Code.gs.
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzp8uuxyzFKlOTQEkhhzT1_if6Lksbyst4fOA5eS3z-D-2oB-ph4MMw8QBtK6v929lA/exec';
-    const APPS_SCRIPT_TOKEN = 'ChicMood_2026_K7M9_X4P2';
-    const PLANILHA_BRIDGE_VERSION = '2026-07-12-html-bridge-v1';
-    const sheetPendingRequests = new Map();
     let editingId=null; let editingImages=[]; let editingVideo=''; let localSelectedFiles=[];
     let productVariacoes = [];
     let saleProducts = [];
@@ -611,7 +595,6 @@
     let manualSelectedProduct = null;
     let manualSaleItems = [];
     let manualSaleExtras = [];
-    let expenseReceiptData = null;
 
     const fallbackImg='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#f3dfc6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#a87936" font-family="serif" font-size="44">Chic Mood</text></svg>`);
 
@@ -973,137 +956,6 @@
     function receiptNumber(n){return String(n||0).padStart(3,'0')}
     function dateBR(value){return new Date(value).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}
 
-    const sheetBridgeState = {
-      ready: false,
-      readyPromise: null,
-      readyResolve: null,
-      readyReject: null,
-      pending: new Map()
-    };
-
-    function resetSheetBridgeReadyPromise(){
-      sheetBridgeState.readyPromise = new Promise((resolve,reject)=>{
-        sheetBridgeState.readyResolve = resolve;
-        sheetBridgeState.readyReject = reject;
-      });
-    }
-    resetSheetBridgeReadyPromise();
-
-    window.addEventListener('message',(event)=>{
-      const data=event.data;
-      if(!data||typeof data!=='object')return;
-
-      if(data.type==='CHIC_MOOD_BRIDGE_READY'){
-        sheetBridgeState.ready=true;
-        if(sheetBridgeState.readyResolve)sheetBridgeState.readyResolve(data);
-        return;
-      }
-
-      if(data.type!=='CHIC_MOOD_BRIDGE_RESPONSE'||!data.requestId)return;
-      const pending=sheetBridgeState.pending.get(data.requestId);
-      if(!pending)return;
-
-      sheetBridgeState.pending.delete(data.requestId);
-      clearTimeout(pending.timer);
-
-      if(data.ok){
-        pending.resolve(data.result);
-      }else{
-        pending.reject(new Error(data.error||'Falha ao acessar a Google Planilha.'));
-      }
-    });
-
-    function reloadSheetBridge(){
-      const frame=document.getElementById('sheetBridgeFrame');
-      if(!frame)throw new Error('A ponte da Google Planilha não foi encontrada no painel.');
-      sheetBridgeState.ready=false;
-      resetSheetBridgeReadyPromise();
-      const separator=APPS_SCRIPT_URL.includes('?')?'&':'?';
-      frame.src=`${APPS_SCRIPT_URL}${separator}v=${Date.now()}`;
-    }
-
-    async function waitForSheetBridge(timeout=20000){
-      if(sheetBridgeState.ready)return true;
-
-      const frame=document.getElementById('sheetBridgeFrame');
-      if(!frame)throw new Error('A ponte da Google Planilha não foi encontrada.');
-
-      if(!frame.src||!frame.src.includes('/exec'))reloadSheetBridge();
-
-      let timer;
-      try{
-        await Promise.race([
-          sheetBridgeState.readyPromise,
-          new Promise((_,reject)=>{
-            timer=setTimeout(()=>reject(new Error(
-              'A ponte da Google Planilha não abriu. No Apps Script, publique como Aplicativo da Web, Executar como: Eu, acesso: Qualquer pessoa, e escolha Nova versão.'
-            )),timeout);
-          })
-        ]);
-        return true;
-      }finally{
-        clearTimeout(timer);
-      }
-    }
-
-    async function sheetRequest(action,payload={},timeout=90000){
-      if(!APPS_SCRIPT_URL||APPS_SCRIPT_URL.includes('COLE_AQUI')){
-        throw new Error('A URL /exec do Apps Script não foi configurada.');
-      }
-      if(!APPS_SCRIPT_TOKEN||APPS_SCRIPT_TOKEN.includes('TROQUE_POR')){
-        throw new Error('A chave de integração da planilha não foi configurada.');
-      }
-
-      await waitForSheetBridge(20000);
-
-      const frame=document.getElementById('sheetBridgeFrame');
-      if(!frame||!frame.contentWindow){
-        throw new Error('A ponte da Google Planilha não está disponível.');
-      }
-
-      const requestId=`bridge_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-
-      return new Promise((resolve,reject)=>{
-        const timer=setTimeout(()=>{
-          sheetBridgeState.pending.delete(requestId);
-          reject(new Error('A Google Planilha demorou além do esperado. Nenhum dado foi confirmado; tente novamente após atualizar a página.'));
-        },timeout);
-
-        sheetBridgeState.pending.set(requestId,{resolve,reject,timer});
-        frame.contentWindow.postMessage({
-          type:'CHIC_MOOD_BRIDGE_REQUEST',
-          requestId,
-          action,
-          payload:payload||{},
-          token:APPS_SCRIPT_TOKEN,
-          version:PLANILHA_BRIDGE_VERSION
-        },'*');
-      });
-    }
-
-    function updateSheetConnectionStatus(state,text){
-      const el=document.getElementById('sheetConnectionStatus');if(!el)return;
-      el.className=`sheet-status ${state||'checking'}`;el.textContent=text;
-    }
-
-    async function testSheetConnection(){
-      updateSheetConnectionStatus('checking','Conectando à Google Planilha...');
-      try{
-        await sheetRequest('ping',{},30000);
-        updateSheetConnectionStatus('connected','Google Planilha conectada');
-        return true;
-      }catch(firstError){
-        try{
-          reloadSheetBridge();
-          await sheetRequest('ping',{},30000);
-          updateSheetConnectionStatus('connected','Google Planilha conectada');
-          return true;
-        }catch(finalError){
-          updateSheetConnectionStatus('error',finalError.message||'Planilha desconectada');
-          throw finalError;
-        }
-      }
-    }
 
     function dashboardStartDate(period){
       const now=new Date();
@@ -1116,28 +968,28 @@
     async function loadSalesDashboard(){
       const table=document.getElementById('dashboardSalesTable');
       const ranking=document.getElementById('dashboardRanking');
-      if(table)table.innerHTML='<div class="dashboard-empty">Carregando vendas da planilha...</div>';
+      if(table)table.innerHTML='<div class="dashboard-empty">Carregando vendas...</div>';
       if(ranking)ranking.innerHTML='<div class="dashboard-empty">Carregando produtos...</div>';
-      updateSheetConnectionStatus('checking','Conectando à Google Planilha...');
-      try{
-        const result=await sheetRequest('getDashboardData');
-        salesDashboardCache=result.sales||[];
-        expensesDashboardCache=result.expenses||[];
-        updateSheetConnectionStatus('connected','Google Planilha conectada');
-        renderSalesDashboard();
-      }catch(e){
-        const message=`Não foi possível carregar a Google Planilha: ${escapeHtml(e.message||e)}`;
-        updateSheetConnectionStatus('error',e.message||'Planilha desconectada');
+      const [salesResult,expensesResult]=await Promise.all([
+        db.from('vendas').select('*, venda_itens(*)').order('created_at',{ascending:false}),
+        db.from('despesas').select('*').order('data_despesa',{ascending:false})
+      ]);
+      if(salesResult.error){
+        const message=`Não foi possível carregar o controle de vendas: ${escapeHtml(salesResult.error.message)}`;
         if(table)table.innerHTML=`<div class="dashboard-empty">${message}</div>`;
         if(ranking)ranking.innerHTML=`<div class="dashboard-empty">${message}</div>`;
+        return;
       }
+      salesDashboardCache=salesResult.data||[];
+      expensesDashboardCache=expensesResult.error?[]:(expensesResult.data||[]);
+      renderSalesDashboard();
     }
 
     function renderSalesDashboard(){
       const period=document.getElementById('dashboardPeriod')?.value||'month';
       const start=dashboardStartDate(period);
       const inPeriod=salesDashboardCache.filter(v=>!start||new Date(v.created_at)>=start);
-      const completed=inPeriod.filter(v=>v.status==='concluida');
+      const completed=inPeriod.filter(v=>v.status!=='cancelada');
       const cancelled=inPeriod.filter(v=>v.status==='cancelada');
 
       const revenue=completed.reduce((sum,v)=>sum+Number(v.total||0),0);
@@ -1158,9 +1010,7 @@
         table.innerHTML=recent.length?`<table class="dashboard-table"><thead><tr><th>Recibo</th><th>Data</th><th>Cliente</th><th>Produtos</th><th>Total</th><th>Status</th></tr></thead><tbody>${recent.map(v=>{
           const itemCount=(v.venda_itens||[]).reduce((s,item)=>s+Number(item.quantidade||0),0);
           const cancelledSale=v.status==='cancelada';
-          const pendingSale=v.status==='cancelamento_pendente';
-          const statusText=cancelledSale?'Cancelado':pendingSale?'Cancelamento pendente':'Concluído';
-          return `<tr><td><b>${receiptNumber(v.numero_recibo)}</b>${v.origem==='historica'?'<br><span class="origin-pill">Anterior</span>':''}</td><td>${dateBR(v.created_at)}</td><td>${escapeHtml(v.cliente||'Sem nome')}</td><td>${itemCount}</td><td><b>${money(v.total)}</b></td><td><span class="status-pill ${cancelledSale?'cancelled':''}">${statusText}</span></td></tr>`;
+          return `<tr><td><b>${receiptNumber(v.numero_recibo)}</b>${v.origem==='historica'?'<br><span class="origin-pill">Anterior</span>':''}</td><td>${dateBR(v.created_at)}</td><td>${escapeHtml(v.cliente||'Sem nome')}</td><td>${itemCount}</td><td><b>${money(v.total)}</b></td><td><span class="status-pill ${cancelledSale?'cancelled':''}">${cancelledSale?'Cancelado':'Concluído'}</span></td></tr>`;
         }).join('')}</tbody></table>`:'<div class="dashboard-empty">Nenhuma venda encontrada neste período.</div>';
       }
 
@@ -1185,9 +1035,8 @@
     }
 
     function productStockOptions(p){
-      const common={productId:p.id,productName:p.name,cost:Number(p.preco_custo||0),image:p.images?.[0]||fallbackImg,code:p.codigo||'',category:p.category||''};
-      if(p.variacoes?.length){return p.variacoes.map((v,i)=>({...common,key:`${p.id}:${i}`,varIndex:i,variationName:v.nome||'',name:`${p.name} - ${v.nome}`,price:Number(v.preco||0),stock:Number(v.quantidade||0)}))}
-      return [{...common,key:`${p.id}:base`,varIndex:null,variationName:'',name:p.name,price:Number(p.price||0),stock:Number(p.quantidade||0)}]
+      if(p.variacoes?.length){return p.variacoes.map((v,i)=>({key:`${p.id}:${i}`,productId:p.id,varIndex:i,name:`${p.name} - ${v.nome}`,price:Number(v.preco||0),stock:Number(v.quantidade||0),image:p.images?.[0]||fallbackImg,code:p.codigo||'',category:p.category||''}))}
+      return [{key:`${p.id}:base`,productId:p.id,varIndex:null,name:p.name,price:Number(p.price||0),stock:Number(p.quantidade||0),image:p.images?.[0]||fallbackImg,code:p.codigo||'',category:p.category||''}]
     }
 
     function renderSaleProducts(){
@@ -1235,95 +1084,40 @@
       document.getElementById('saleTotal').textContent=money(totals.total);
     }
 
-    async function updateStockForItems(items,direction){
-      const groups=new Map();
-      items.forEach(item=>{if(item.produto_id===null||item.produto_id===undefined||item.produto_id==='')return;const key=String(item.produto_id);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item)});
-      const snapshots=[];
-      try{
-        for(const [productId,groupItems] of groups){
-          const {data:product,error}=await db.from('produtos').select('id,name,quantidade,variacoes').eq('id',productId).single();
-          if(error||!product)throw new Error(error?.message||`Produto ${productId} não encontrado.`);
-          const before={id:product.id,quantidade:Number(product.quantidade||0),variacoes:Array.isArray(product.variacoes)?JSON.parse(JSON.stringify(product.variacoes)):[]};
-          let quantidade=before.quantidade;
-          const variacoes=JSON.parse(JSON.stringify(before.variacoes));
-          for(const item of groupItems){
-            const qty=Number(item.quantidade||item.qty||0);
-            const varIndex=item.variacao_index===null||item.variacao_index===undefined||item.variacao_index===''?null:Number(item.variacao_index);
-            if(varIndex===null){
-              const next=quantidade+(direction*qty);
-              if(direction<0&&next<0)throw new Error(`Estoque insuficiente para ${product.name}.`);
-              quantidade=next;
-            }else{
-              if(!variacoes[varIndex])throw new Error(`Variação inválida para ${product.name}.`);
-              const current=Number(variacoes[varIndex].quantidade||0);
-              const next=current+(direction*qty);
-              if(direction<0&&next<0)throw new Error(`Estoque insuficiente para ${product.name} - ${variacoes[varIndex].nome||''}.`);
-              variacoes[varIndex].quantidade=next;
-            }
-          }
-          const updatePayload={};
-          if(groupItems.some(x=>x.variacao_index===null||x.variacao_index===undefined||x.variacao_index===''))updatePayload.quantidade=quantidade;
-          if(groupItems.some(x=>x.variacao_index!==null&&x.variacao_index!==undefined&&x.variacao_index!==''))updatePayload.variacoes=variacoes;
-          const {error:updateError}=await db.from('produtos').update(updatePayload).eq('id',product.id);
-          if(updateError)throw updateError;
-          snapshots.push(before);
-        }
-        return snapshots;
-      }catch(error){
-        await rollbackStockSnapshots(snapshots);
-        throw error;
-      }
-    }
-
-    async function rollbackStockSnapshots(snapshots){
-      for(const snapshot of [...(snapshots||[])].reverse()){
-        await db.from('produtos').update({quantidade:snapshot.quantidade,variacoes:snapshot.variacoes}).eq('id',snapshot.id);
-      }
-    }
-
     async function finishSale(){
       const cliente=document.getElementById('saleClient').value.trim();
       if(!cliente)return alert('Informe o nome do cliente.');
       if(!saleCart.length)return alert('Selecione pelo menos um item.');
       const totals=saleTotals();
       if(totals.discount>totals.gross)return alert('O desconto não pode ser maior que o valor total antes do desconto.');
-      let stockSnapshots=[];
+      let venda=null;
       try{
-        setBusy(true,'Reservando o número do recibo na planilha...');
-        const reservation=await sheetRequest('reserveReceiptNumber',{});
-        const numero=Number(reservation.numero_recibo);
+        setBusy(true,'Registrando venda e baixando o estoque...');
+        const itens=saleCart.map(x=>({produto_id:x.productId,variacao_index:x.varIndex,quantidade:x.qty}));
         const adicionais=saleExtras.map(x=>({descricao:x.descricao,valor:Number(x.valor)}));
-        const payment=document.getElementById('salePayment').value;
-        const note=document.getElementById('saleNote').value.trim();
-        const createdAt=new Date().toISOString();
-        const sheetItems=saleCart.map(x=>({
-          produto_id:x.productId,variacao_index:x.varIndex,nome_produto:x.productName||x.name,
-          variacao_nome:x.variationName||'',quantidade:x.qty,preco_unitario:x.price,
-          custo_unitario:Number(x.cost||0),total:x.price*x.qty,imagem_url:x.image===fallbackImg?'':x.image
-        }));
-        const venda={numero_recibo:numero,cliente,forma_pagamento:payment,observacao:note,subtotal:totals.subtotal,total_adicionais:totals.extrasTotal,desconto:totals.discount,total:totals.total,adicionais,created_at:createdAt,origem:'painel'};
+        const {data,error}=await db.rpc('registrar_venda_chic_mood',{
+          p_cliente:cliente,
+          p_pagamento:document.getElementById('salePayment').value,
+          p_observacao:document.getElementById('saleNote').value.trim(),
+          p_desconto:totals.discount,
+          p_adicionais:adicionais,
+          p_itens:itens
+        });
+        if(error)throw error;
+        venda=Array.isArray(data)?data[0]:data;
 
         setBusy(true,'Criando e salvando o recibo em imagem...');
-        const receiptBlob=await buildReceiptImage({...venda,itens_snapshot:saleCart.map(x=>({...x})),adicionais_snapshot:adicionais});
-        const path=`recibo_${receiptNumber(numero)}_${Date.now()}.jpg`;
+        const receiptBlob=await buildReceiptImage({...venda,cliente,itens_snapshot:saleCart.map(x=>({...x})),adicionais_snapshot:adicionais});
+        const path=`recibo_${receiptNumber(venda.numero_recibo)}_${Date.now()}.jpg`;
         const {error:upError}=await db.storage.from(RECEIPTS_BUCKET).upload(path,receiptBlob,{contentType:'image/jpeg',cacheControl:'31536000'});
-        if(upError)throw new Error(`Não foi possível salvar o recibo: ${upError.message}`);
+        if(upError)throw new Error(`A venda foi registrada, mas o recibo não foi salvo: ${upError.message}`);
         const {data:publicData}=db.storage.from(RECEIPTS_BUCKET).getPublicUrl(path);
-        venda.recibo_url=publicData.publicUrl;
+        const receiptUrl=publicData.publicUrl;
+        const {error:urlError}=await db.rpc('atualizar_recibo_chic_mood',{p_venda_id:venda.id,p_recibo_url:receiptUrl});
+        if(urlError)throw new Error(`A venda foi registrada, mas o link do recibo não foi atualizado: ${urlError.message}`);
 
-        setBusy(true,'Baixando o estoque e gravando a venda na planilha...');
-        stockSnapshots=await updateStockForItems(sheetItems,-1);
-        try{
-          const saved=await sheetRequest('saveSale',{sale:venda,items:sheetItems});
-          venda.id=saved.id;
-        }catch(sheetError){
-          await rollbackStockSnapshots(stockSnapshots);
-          stockSnapshots=[];
-          throw sheetError;
-        }
-
-        downloadBlob(receiptBlob,`Recibo_Chic_Mood_${receiptNumber(numero)}.jpg`);
-        alert(`✅ Venda registrada!\nRecibo nº ${receiptNumber(numero)}\nEstoque atualizado e controle salvo na Google Planilha.`);
+        downloadBlob(receiptBlob,`Recibo_Chic_Mood_${receiptNumber(venda.numero_recibo)}.jpg`);
+        alert(`✅ Venda registrada!\nRecibo nº ${receiptNumber(venda.numero_recibo)}\nEstoque atualizado automaticamente.`);
         saleCart=[];saleExtras=[];
         document.getElementById('saleClient').value='';
         document.getElementById('saleNote').value='';
@@ -1332,12 +1126,17 @@
         document.getElementById('extraValue').value='';
         renderSaleExtras();
         await loadSaleProducts();renderSaleCart();
-        await loadSalesDashboard();
       }catch(e){
         console.error(e);
-        alert(`Não foi possível concluir a venda: ${e.message||e}`);
+        if(venda){
+          alert(`A venda nº ${receiptNumber(venda.numero_recibo)} foi registrada e o estoque foi baixado, mas houve um problema ao gerar ou salvar a imagem do recibo.\n\n${e.message||e}`);
+          saleCart=[];saleExtras=[];renderSaleExtras();await loadSaleProducts();renderSaleCart();
+        }else{
+          alert(`Não foi possível concluir a venda: ${e.message||e}`);
+        }
       }finally{setBusy(false)}
     }
+
 
     function localDateTimeValue(date=new Date()){
       const pad=n=>String(n).padStart(2,'0');
@@ -1373,7 +1172,7 @@
       if(!name)return alert('Informe o nome do produto.');
       if(qty<=0)return alert('Informe uma quantidade válida.');
       if(price<=0)return alert('Informe o valor unitário vendido.');
-      manualSaleItems.push({id:`manual_${Date.now()}_${Math.random().toString(36).slice(2)}`,name,qty,price,cost,image:manualSelectedProduct?.image||fallbackImg,category:manualSelectedProduct?.category||'',productId:manualSelectedProduct?.productId??null,varIndex:manualSelectedProduct?.varIndex??null,variationName:manualSelectedProduct?.variationName||''});
+      manualSaleItems.push({id:`manual_${Date.now()}_${Math.random().toString(36).slice(2)}`,name,qty,price,cost,image:manualSelectedProduct?.image||fallbackImg,category:manualSelectedProduct?.category||''});
       document.getElementById('manualProductSelect').value='';
       document.getElementById('manualItemName').value='';
       document.getElementById('manualItemQty').value='1';
@@ -1420,33 +1219,35 @@
       const dateValue=document.getElementById('manualSaleDate').value;
       if(!dateValue)return alert('Informe a data da venda.');
       const receiptRaw=document.getElementById('manualReceiptNumber').value.trim();
-      const requestedNumber=receiptRaw?Number(receiptRaw):null;
+      const receiptNo=receiptRaw?Number(receiptRaw):null;
+      let venda=null;
       try{
-        setBusy(true,'Reservando o número do recibo na planilha...');
-        const reservation=await sheetRequest('reserveReceiptNumber',{requestedNumber});
-        const numero=Number(reservation.numero_recibo);
+        setBusy(true,'Registrando a venda anterior...');
+        const itens=manualSaleItems.map(x=>({nome_produto:x.name,variacao_nome:null,quantidade:x.qty,preco_unitario:x.price,custo_unitario:x.cost,imagem_url:x.image===fallbackImg?null:x.image}));
         const adicionais=manualSaleExtras.map(x=>({descricao:x.descricao,valor:Number(x.valor)}));
-        const payment=document.getElementById('manualSalePayment').value;
-        const note=document.getElementById('manualSaleNote').value.trim();
-        const createdAt=new Date(dateValue).toISOString();
-        const items=manualSaleItems.map(x=>({
-          produto_id:x.productId??null,variacao_index:x.varIndex??null,nome_produto:x.name,
-          variacao_nome:x.variationName||'',quantidade:x.qty,preco_unitario:x.price,
-          custo_unitario:x.cost,total:x.price*x.qty,imagem_url:x.image===fallbackImg?'':x.image
-        }));
-        const venda={numero_recibo:numero,cliente,forma_pagamento:payment,observacao:note,subtotal:totals.subtotal,total_adicionais:totals.extrasTotal,desconto:totals.discount,total:totals.total,adicionais,created_at:createdAt,origem:'historica'};
-
+        const {data,error}=await db.rpc('registrar_venda_manual_chic_mood',{
+          p_numero_recibo:receiptNo,
+          p_data:new Date(dateValue).toISOString(),
+          p_cliente:cliente,
+          p_pagamento:document.getElementById('manualSalePayment').value,
+          p_observacao:document.getElementById('manualSaleNote').value.trim(),
+          p_desconto:totals.discount,
+          p_adicionais:adicionais,
+          p_itens:itens
+        });
+        if(error)throw error;
+        venda=Array.isArray(data)?data[0]:data;
         setBusy(true,'Gerando o recibo da venda anterior...');
-        const receiptBlob=await buildReceiptImage({...venda,itens_snapshot:manualSaleItems.map(x=>({...x})),adicionais_snapshot:adicionais});
-        const path=`recibo_${receiptNumber(numero)}_historico_${Date.now()}.jpg`;
+        const snapshot=manualSaleItems.map(x=>({...x}));
+        const receiptBlob=await buildReceiptImage({...venda,cliente,itens_snapshot:snapshot,adicionais_snapshot:adicionais});
+        const path=`recibo_${receiptNumber(venda.numero_recibo)}_historico_${Date.now()}.jpg`;
         const {error:upError}=await db.storage.from(RECEIPTS_BUCKET).upload(path,receiptBlob,{contentType:'image/jpeg',cacheControl:'31536000'});
-        if(upError)throw new Error(`Não foi possível salvar o recibo: ${upError.message}`);
+        if(upError)throw new Error(`A venda foi registrada, mas o recibo não foi salvo: ${upError.message}`);
         const {data:publicData}=db.storage.from(RECEIPTS_BUCKET).getPublicUrl(path);
-        venda.recibo_url=publicData.publicUrl;
-        await sheetRequest('saveSale',{sale:venda,items});
-
-        downloadBlob(receiptBlob,`Recibo_Chic_Mood_${receiptNumber(numero)}.jpg`);
-        alert(`✅ Venda anterior registrada!\nRecibo nº ${receiptNumber(numero)}\nO estoque atual não foi alterado.`);
+        const {error:urlError}=await db.rpc('atualizar_recibo_chic_mood',{p_venda_id:venda.id,p_recibo_url:publicData.publicUrl});
+        if(urlError)throw urlError;
+        downloadBlob(receiptBlob,`Recibo_Chic_Mood_${receiptNumber(venda.numero_recibo)}.jpg`);
+        alert(`✅ Venda anterior registrada!\nRecibo nº ${receiptNumber(venda.numero_recibo)}\nO estoque atual não foi alterado.`);
         manualSaleItems=[];manualSaleExtras=[];manualSelectedProduct=null;
         ['manualSaleClient','manualReceiptNumber','manualSaleNote','manualItemName','manualItemPrice','manualItemCost','manualExtraDescription','manualExtraValue'].forEach(id=>document.getElementById(id).value='');
         document.getElementById('manualItemQty').value='1';
@@ -1457,7 +1258,8 @@
         await loadSalesDashboard();
       }catch(e){
         console.error(e);
-        alert(`Não foi possível registrar a venda anterior: ${e.message||e}`);
+        if(venda)alert(`A venda nº ${receiptNumber(venda.numero_recibo)} foi registrada, mas houve um problema ao salvar a imagem do recibo.\n\n${e.message||e}`);
+        else alert(`Não foi possível registrar a venda anterior: ${e.message||e}`);
       }finally{setBusy(false)}
     }
 
@@ -1465,85 +1267,71 @@
       const input=document.getElementById('expenseDate');
       if(input&&!input.value)input.value=new Date().toISOString().slice(0,10);
     }
-
-    async function prepareExpenseReceipt(file){
-      if(!file||!file.type.startsWith('image/'))throw new Error('Selecione uma imagem válida.');
-      const image=await new Promise((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Não foi possível processar a imagem.'))};img.src=url});
-      const max=1200;const scale=Math.min(1,max/Math.max(image.width,image.height));
-      const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));
-      const ctx=canvas.getContext('2d',{alpha:false});ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);
-      const dataUrl=canvas.toDataURL('image/webp',.78);
-      return {base64:dataUrl,nome:`comprovante_${Date.now()}.webp`,tipo:'image/webp'};
+    async function previewExpenseProof(){
+      const input=document.getElementById('expenseProof');
+      const box=document.getElementById('expenseProofPreview');
+      const file=input?.files?.[0];
+      if(!box)return;
+      if(!file){box.classList.remove('show');box.innerHTML='';return}
+      if(!file.type.startsWith('image/')){input.value='';box.classList.remove('show');return alert('Selecione uma imagem válida.');}
+      if(file.size>8*1024*1024){input.value='';box.classList.remove('show');return alert('O comprovante deve ter no máximo 8 MB.');}
+      const data=await fileToData(file);
+      box.innerHTML=`<img src="${data}" alt="Prévia"><div><b>${escapeHtml(file.name)}</b><br><small style="color:var(--muted)">${(file.size/1024/1024).toFixed(2)} MB</small><br><button type="button" class="danger" style="margin-top:6px" onclick="clearExpenseProof()">Remover</button></div>`;
+      box.classList.add('show');
     }
-
-    document.getElementById('expenseReceipt').addEventListener('change',async function(){
-      const file=this.files?.[0];const preview=document.getElementById('expenseReceiptPreview');
-      if(!file){expenseReceiptData=null;preview.classList.remove('show');preview.innerHTML='';return}
-      try{
-        expenseReceiptData=await prepareExpenseReceipt(file);
-        preview.innerHTML=`<img src="${expenseReceiptData.base64}"><div><b>Comprovante selecionado</b><br><small>${escapeHtml(file.name)}</small><br><button type="button" class="danger" style="margin-top:7px" onclick="clearExpenseReceipt()">Remover</button></div>`;
-        preview.classList.add('show');
-      }catch(e){this.value='';expenseReceiptData=null;preview.classList.remove('show');alert(e.message||e)}
-    });
-
-    function clearExpenseReceipt(){
-      expenseReceiptData=null;const input=document.getElementById('expenseReceipt');if(input)input.value='';const preview=document.getElementById('expenseReceiptPreview');if(preview){preview.classList.remove('show');preview.innerHTML=''}
+    function clearExpenseProof(){
+      const input=document.getElementById('expenseProof');
+      const box=document.getElementById('expenseProofPreview');
+      if(input)input.value='';
+      if(box){box.classList.remove('show');box.innerHTML='';}
     }
-
-    function dataUrlToBlob(dataUrl){
-      const parts=String(dataUrl||'').split(',');
-      if(parts.length!==2)throw new Error('Comprovante invalido.');
-      const mime=(parts[0].match(/data:([^;]+)/)||[])[1]||'image/webp';
-      const binary=atob(parts[1]);
-      const bytes=new Uint8Array(binary.length);
-      for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-      return new Blob([bytes],{type:mime});
-    }
-
-    async function uploadExpenseReceipt(){
-      if(!expenseReceiptData?.base64)return '';
-      const blob=dataUrlToBlob(expenseReceiptData.base64);
-      const extension=(expenseReceiptData.tipo||'image/webp').includes('png')?'png':((expenseReceiptData.tipo||'').includes('jpeg')?'jpg':'webp');
-      const path=`comprovantes-gastos/comprovante_${Date.now()}_${Math.random().toString(36).slice(2)}.${extension}`;
-      const {error}=await db.storage.from(RECEIPTS_BUCKET).upload(path,blob,{contentType:blob.type,cacheControl:'31536000',upsert:false});
-      if(error)throw new Error(`Nao foi possivel salvar o comprovante: ${error.message}`);
+    async function uploadExpenseProof(file){
+      if(!file)return null;
+      const optimized=await optimizeImageForUpload(file);
+      const safeName=(optimized.name||'comprovante.webp').replace(/[^a-zA-Z0-9._-]/g,'_');
+      const path=`gastos/comprovante_${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safeName}`;
+      const {error}=await db.storage.from(RECEIPTS_BUCKET).upload(path,optimized,{contentType:optimized.type||'image/webp',cacheControl:'31536000',upsert:false});
+      if(error)throw new Error(`Não foi possível enviar o comprovante: ${error.message}`);
       const {data}=db.storage.from(RECEIPTS_BUCKET).getPublicUrl(path);
       return data.publicUrl;
     }
-
     async function saveExpense(){
       const description=document.getElementById('expenseDescription').value.trim();
       const value=parseMoneyInput(document.getElementById('expenseValue').value);
       const date=document.getElementById('expenseDate').value;
+      const proofFile=document.getElementById('expenseProof')?.files?.[0]||null;
       if(!date)return alert('Informe a data do gasto.');
       if(!description)return alert('Informe a descrição do gasto.');
       if(value<=0)return alert('Informe um valor maior que zero.');
       try{
-        setBusy(true,expenseReceiptData?'Salvando comprovante...':'Salvando gasto na Google Planilha...');
-        const comprovanteUrl=await uploadExpenseReceipt();
-        setBusy(true,'Salvando gasto na Google Planilha...');
-        await sheetRequest('saveExpense',{
-          data:date,categoria:document.getElementById('expenseCategory').value,descricao:description,
-          valor:value,forma_pagamento:document.getElementById('expensePayment').value,
-          observacao:document.getElementById('expenseNote').value.trim(),
-          comprovante_url:comprovanteUrl
-        },90000);
+        setBusy(true,proofFile?'Enviando comprovante...':'Salvando gasto...');
+        const comprovanteUrl=await uploadExpenseProof(proofFile);
+        setBusy(true,'Salvando gasto...');
+        const {error}=await db.rpc('registrar_despesa_chic_mood',{
+          p_data:date,
+          p_categoria:document.getElementById('expenseCategory').value,
+          p_descricao:description,
+          p_valor:value,
+          p_pagamento:document.getElementById('expensePayment').value,
+          p_observacao:document.getElementById('expenseNote').value.trim(),
+          p_comprovante_url:comprovanteUrl
+        });
+        if(error)throw error;
         document.getElementById('expenseDescription').value='';
         document.getElementById('expenseValue').value='';
         document.getElementById('expenseNote').value='';
-        clearExpenseReceipt();
+        clearExpenseProof();
         await loadExpenses();
         await loadSalesDashboard();
-        alert('✅ Gasto registrado na Google Planilha.');
+        alert('✅ Gasto registrado.');
       }catch(e){alert(`Não foi possível salvar o gasto: ${e.message||e}`)}finally{setBusy(false)}
     }
-
     async function loadExpenses(){
-      const list=document.getElementById('expenseList');if(list)list.innerHTML='<div class="dashboard-empty">Carregando gastos da planilha...</div>';
-      try{const result=await sheetRequest('getExpenses');expensesCache=result.expenses||[];renderExpenses()}
-      catch(e){if(list)list.innerHTML=`<div class="dashboard-empty">Erro: ${escapeHtml(e.message||e)}</div>`}
+      const list=document.getElementById('expenseList');if(list)list.innerHTML='<div class="dashboard-empty">Carregando gastos...</div>';
+      const {data,error}=await db.from('despesas').select('*').order('data_despesa',{ascending:false}).order('created_at',{ascending:false});
+      if(error){if(list)list.innerHTML=`<div class="dashboard-empty">Erro: ${escapeHtml(error.message)}</div>`;return}
+      expensesCache=data||[];renderExpenses();
     }
-
     function renderExpenses(){
       const period=document.getElementById('expensePeriod')?.value||'month';
       const start=dashboardStartDate(period);
@@ -1555,11 +1343,11 @@
       document.getElementById('expenseCount').textContent=String(active.length);
       document.getElementById('expenseAverage').textContent=money(active.length?total/active.length:0);
       const list=document.getElementById('expenseList');
-      list.innerHTML=filtered.length?filtered.map(e=>`<div class="expense-row ${e.status==='cancelada'?'cancelled':''}"><div class="expense-date"><b>${new Date(`${e.data_despesa}T12:00:00`).toLocaleDateString('pt-BR')}</b><br><small>${escapeHtml(e.categoria||'')}</small></div><div><b>${escapeHtml(e.descricao||'')}</b><br><small style="color:var(--muted)">${escapeHtml(e.forma_pagamento||'')}${e.observacao?` • ${escapeHtml(e.observacao)}`:''}${e.comprovante_url?` • <a href="${e.comprovante_url}" target="_blank" style="color:var(--gold)">Ver comprovante</a>`:''}</small></div><div class="expense-value">${money(e.valor)}</div>${e.status==='cancelada'?'<span class="status-pill cancelled">Cancelado</span>':`<button class="danger" onclick="cancelExpense('${e.id}')">Cancelar</button>`}</div>`).join(''):'<div class="dashboard-empty">Nenhum gasto encontrado neste período.</div>';
+      list.innerHTML=filtered.length?filtered.map(e=>`<div class="expense-row ${e.status==='cancelada'?'cancelled':''}"><div class="expense-date"><b>${new Date(`${e.data_despesa}T12:00:00`).toLocaleDateString('pt-BR')}</b><br><small>${escapeHtml(e.categoria||'')}</small></div><div><b>${escapeHtml(e.descricao||'')}</b><br><small style="color:var(--muted)">${escapeHtml(e.forma_pagamento||'')}${e.observacao?` • ${escapeHtml(e.observacao)}`:''}</small>${e.comprovante_url?`<br><a class="proof-link" href="${e.comprovante_url}" target="_blank" rel="noopener">📎 Abrir comprovante</a>`:''}</div><div class="expense-value">${money(e.valor)}</div>${e.status==='cancelada'?'<span class="status-pill cancelled">Cancelado</span>':`<button class="danger" onclick="cancelExpense('${e.id}')">Cancelar</button>`}</div>`).join(''):'<div class="dashboard-empty">Nenhum gasto encontrado neste período.</div>';
     }
     async function cancelExpense(id){
       if(!confirm('Cancelar este gasto? Ele deixará de entrar nos totais, mas permanecerá no histórico.'))return;
-      try{setBusy(true,'Cancelando gasto na planilha...');await sheetRequest('cancelExpense',{id});await loadExpenses();await loadSalesDashboard()}catch(e){alert(`Não foi possível cancelar: ${e.message||e}`)}finally{setBusy(false)}
+      try{setBusy(true,'Cancelando gasto...');const {error}=await db.rpc('cancelar_despesa_chic_mood',{p_despesa_id:id});if(error)throw error;await loadExpenses();await loadSalesDashboard()}catch(e){alert(`Não foi possível cancelar: ${e.message||e}`)}finally{setBusy(false)}
     }
 
     async function buildReceiptImage(venda){
@@ -1633,11 +1421,11 @@
     function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
 
     async function loadReceipts(){
-      document.getElementById('receiptList').innerHTML='<div style="color:var(--muted)">Carregando recibos da planilha...</div>';
-      try{const result=await sheetRequest('getReceipts');receiptsCache=result.sales||[];renderReceipts()}
-      catch(e){document.getElementById('receiptList').innerHTML=`<div>Erro: ${escapeHtml(e.message||e)}</div>`}
+      document.getElementById('receiptList').innerHTML='<div style="color:var(--muted)">Carregando...</div>';
+      const {data,error}=await db.from('vendas').select('*, venda_itens(*)').order('numero_recibo',{ascending:false});
+      if(error){document.getElementById('receiptList').innerHTML=`<div>Erro: ${escapeHtml(error.message)}</div>`;return}
+      receiptsCache=data||[];renderReceipts();
     }
-
     function renderReceipts(){
       const q=(document.getElementById('receiptSearch')?.value||'').toLowerCase();
       const status=document.getElementById('receiptStatus')?.value||'todos';
@@ -1645,39 +1433,11 @@
       document.getElementById('receiptList').innerHTML=list.length?list.map(v=>{
         const extras=Array.isArray(v.adicionais)?v.adicionais:[];
         const extrasHtml=extras.map(x=>`<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>${escapeHtml(x.descricao||'Adicional')}</span><span>+ ${money(x.valor)}</span></div>`).join('');
-        const pending=v.status==='cancelamento_pendente';
-        const cancelled=v.status==='cancelada';
-        const statusText=cancelled?'Cancelado':pending?'Cancelamento pendente':'Concluído';
-        return `<article class="receipt-card ${cancelled?'cancelled':''}"><div class="receipt-meta"><div><b>Recibo nº ${receiptNumber(v.numero_recibo)}</b>${v.origem==='historica'?' <span class="origin-pill">Venda anterior</span>':''}<br><small>${dateBR(v.created_at)} • ${escapeHtml(v.cliente||'')}</small></div><span class="status-pill ${cancelled?'cancelled':''}">${statusText}</span></div>${v.recibo_url?`<img src="${v.recibo_url}" loading="lazy">`:'<div style="padding:40px;text-align:center;color:var(--muted)">Imagem não disponível</div>'}<div style="display:flex;justify-content:space-between"><span>${(v.venda_itens||[]).reduce((s,x)=>s+Number(x.quantidade||0),0)} produto(s)</span><b>${money(v.total)}</b></div>${extrasHtml}${Number(v.desconto||0)>0?`<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>Desconto</span><span>− ${money(v.desconto)}</span></div>`:''}<div class="btn-container" style="margin-top:12px">${v.recibo_url?`<a class="ghost" style="text-decoration:none;text-align:center" href="${v.recibo_url}" target="_blank">Abrir recibo</a>`:''}${!cancelled?`<button class="danger" onclick="cancelSale('${v.id}',${v.numero_recibo},'${v.origem||'painel'}')">${pending?'Retomar cancelamento':'Cancelar venda'}</button>`:''}</div></article>`;
+        return `<article class="receipt-card ${v.status==='cancelada'?'cancelled':''}"><div class="receipt-meta"><div><b>Recibo nº ${receiptNumber(v.numero_recibo)}</b>${v.origem==='historica'?' <span class="origin-pill">Venda anterior</span>':''}<br><small>${dateBR(v.created_at)} • ${escapeHtml(v.cliente||'')}</small></div><span class="status-pill ${v.status==='cancelada'?'cancelled':''}">${v.status==='cancelada'?'Cancelado':'Concluído'}</span></div>${v.recibo_url?`<img src="${v.recibo_url}" loading="lazy">`:'<div style="padding:40px;text-align:center;color:var(--muted)">Imagem não disponível</div>'}<div style="display:flex;justify-content:space-between"><span>${v.venda_itens?.length||0} item(ns)</span><b>${money(v.total)}</b></div>${extrasHtml}${Number(v.desconto||0)>0?`<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>Desconto</span><span>− ${money(v.desconto)}</span></div>`:''}<div class="btn-container" style="margin-top:12px">${v.recibo_url?`<a class="ghost" style="text-decoration:none;text-align:center" href="${v.recibo_url}" target="_blank">Abrir recibo</a>`:''}${v.status!=='cancelada'?`<button class="danger" onclick="cancelSale('${v.id}',${v.numero_recibo},'${v.origem||'painel'}')">Cancelar venda</button>`:''}</div></article>`;
       }).join(''):'<div style="color:var(--muted);padding:30px">Nenhum recibo encontrado.</div>';
     }
-
-    async function cancelSale(id,number,origin='painel'){
-      const historical=origin==='historica';
-      if(!confirm(`Cancelar o recibo nº ${receiptNumber(number)}?\n${historical?'Esta venda anterior não altera o estoque atual.':'Os produtos serão devolvidos automaticamente ao estoque.'}`))return;
-      let restoreSnapshots=[];
-      try{
-        setBusy(true,'Preparando o cancelamento na planilha...');
-        const prepared=await sheetRequest('prepareCancelSale',{id});
-        const sale=prepared.sale;
-        if(!historical){
-          setBusy(true,'Devolvendo os produtos ao estoque...');
-          restoreSnapshots=await updateStockForItems(sale.venda_itens||[],1);
-        }
-        try{
-          await sheetRequest('finalizeCancelSale',{id,stockReturned:!historical});
-        }catch(finalError){
-          if(restoreSnapshots.length)await rollbackStockSnapshots(restoreSnapshots);
-          await sheetRequest('revertCancelSale',{id}).catch(()=>{});
-          throw finalError;
-        }
-        await loadReceipts();await loadSalesDashboard();
-        alert(historical?'Venda anterior cancelada. O estoque não foi alterado.':'Venda cancelada e estoque devolvido.');
-      }catch(e){
-        await sheetRequest('revertCancelSale',{id}).catch(()=>{});
-        alert(`Não foi possível cancelar: ${e.message||e}`);
-      }finally{setBusy(false)}
-    }
+    async function cancelSale(id,number,origin='painel'){const historical=origin==='historica';if(!confirm(`Cancelar o recibo nº ${receiptNumber(number)}?
+${historical?'Esta venda anterior não altera o estoque atual.':'O estoque dos itens será devolvido automaticamente.'}`))return;try{setBusy(true,historical?'Cancelando venda anterior...':'Cancelando venda e devolvendo o estoque...');const {error}=await db.rpc('cancelar_venda_chic_mood',{p_venda_id:id});if(error)throw error;await loadReceipts();await loadSalesDashboard();alert(historical?'Venda anterior cancelada. O estoque não foi alterado.':'Venda cancelada e estoque devolvido.') }catch(e){alert(`Não foi possível cancelar: ${e.message||e}`)}finally{setBusy(false)}}
 
     if(localStorage.getItem('chicMoodLogged')==='yes') showAdmin();
   </script>
