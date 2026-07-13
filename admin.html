@@ -162,6 +162,10 @@
     .receipt-card.cancelled{opacity:.72;border-color:rgba(155,47,47,.25)}
     .receipt-card img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:12px;background:var(--gold-light);margin:12px 0}
     .receipt-meta{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .receipt-total-row,.receipt-detail-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);gap:12px;align-items:start}
+    .receipt-total-row b,.receipt-detail-row span:last-child{min-width:0;max-width:100%;text-align:right;overflow-wrap:anywhere;word-break:break-word}
+    .receipt-total-row b{font-size:clamp(13px,3.2vw,16px);line-height:1.25}
+    .receipt-detail-row{font-size:12px;color:var(--muted)}
     .status-pill{padding:5px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#e8f4eb;color:#39704b}
     .status-pill.cancelled{background:#fce8e8;color:#9b2f2f}
     .sales-search{display:grid;grid-template-columns:1fr 220px;gap:12px;margin-bottom:16px}
@@ -877,26 +881,66 @@
     }
 
     async function registrarVenda(id, button){
-      if(button) { button.disabled = true; button.textContent = 'Baixando...'; }
-      try {
-        const ps = await fetchProductsFromNuvem();
-        const p = ps.find(x=>x.id===id);
-        if(!p) throw new Error('Produto não encontrado.');
-        if(p.variacoes?.length > 0) { alert('Abra em "Editar" para reduzir o ML correto.'); return; }
+      const textoOriginal = button?.textContent || 'Baixa (-1)';
+      if(button){
+        button.disabled = true;
+        button.textContent = 'Baixando...';
+      }
 
-        const estoqueAtual = Number(p.quantidade) || 0;
-        if(estoqueAtual <= 0) { alert('Este produto já está sem estoque.'); return; }
+      try{
+        // Busca diretamente pelo ID no Supabase. Isso evita falhas por diferença
+        // entre ID numérico e ID recebido como texto no clique do botão.
+        const { data: produto, error: buscaError } = await db
+          .from('produtos')
+          .select('id, name, quantidade, variacoes')
+          .eq('id', id)
+          .maybeSingle();
 
-        const novaQtd = estoqueAtual - 1;
-        const { error } = await db.from('produtos').update({ quantidade: novaQtd }).eq('id', id);
-        if(error) throw error;
+        if(buscaError) throw buscaError;
+        if(!produto) throw new Error('Produto não encontrado no banco de dados.');
+
+        const variacoes = Array.isArray(produto.variacoes) ? produto.variacoes : [];
+        if(variacoes.length > 0){
+          alert('Este produto possui variações. Abra em "Editar" para reduzir o estoque da opção correta.');
+          return;
+        }
+
+        const estoqueAtual = Number(produto.quantidade);
+        if(!Number.isFinite(estoqueAtual)){
+          throw new Error('A quantidade atual deste produto é inválida.');
+        }
+        if(estoqueAtual <= 0){
+          alert('Este produto já está sem estoque.');
+          return;
+        }
+
+        const novaQuantidade = estoqueAtual - 1;
+
+        // A segunda condição impede duas baixas simultâneas sobre o mesmo estoque.
+        // O select confirma que uma linha foi realmente atualizada.
+        const { data: produtoAtualizado, error: updateError } = await db
+          .from('produtos')
+          .update({ quantidade: novaQuantidade })
+          .eq('id', produto.id)
+          .eq('quantidade', estoqueAtual)
+          .select('id, quantidade')
+          .maybeSingle();
+
+        if(updateError) throw updateError;
+        if(!produtoAtualizado){
+          throw new Error('A baixa não foi gravada. O estoque pode ter sido alterado em outro acesso ou a tabela não permite atualização.');
+        }
 
         await renderAdmin();
-      } catch(error) {
-        console.error(error);
-        alert(`Não foi possível dar baixa no estoque: ${error.message || error}`);
-      } finally {
-        if(button && document.body.contains(button)) { button.disabled = false; button.textContent = 'Baixa (-1)'; }
+        alert(`✅ Baixa realizada com sucesso!\n${produto.name || 'Produto'}\nEstoque atual: ${produtoAtualizado.quantidade}`);
+      }catch(error){
+        console.error('Erro ao dar baixa no estoque:', error);
+        alert(`Não foi possível dar baixa no estoque.\n\n${error.message || error}`);
+      }finally{
+        if(button && document.body.contains(button)){
+          button.disabled = false;
+          button.textContent = textoOriginal;
+        }
       }
     }
 
@@ -936,7 +980,7 @@
             <div style="font-size:13px; margin-top:4px; font-weight:bold;">${precoDisplay} | ${estoqueStatus}</div>
           </div>
           <div class="prod-actions">
-            ${!temVar ? `<button class="success" ${Number(p.quantidade) <= 0 ? 'disabled' : ''} onclick="registrarVenda(${p.id}, this)">${Number(p.quantidade) <= 0 ? 'Sem estoque' : 'Baixa (-1)'}</button>` : ''}
+            ${!temVar ? `<button class="success" ${Number(p.quantidade) <= 0 ? 'disabled' : ''} onclick='registrarVenda(${JSON.stringify(p.id)}, this)'>${Number(p.quantidade) <= 0 ? 'Sem estoque' : 'Baixa (-1)'}</button>` : ''}
             <button class="ghost" style="padding:6px 14px; font-size:13px;" onclick="editProduct(${p.id})">Editar</button> 
             <button class="danger" onclick="deleteProduct(${p.id})">Apagar</button>
           </div>
@@ -1354,7 +1398,7 @@
       const items=venda.itens_snapshot||[];
       const extras=venda.adicionais_snapshot||venda.adicionais||[];
       const discount=Number(venda.desconto||0);
-      const subtotal=Number(venda.subtotal||items.reduce((s,x)=>s+x.price*x.qty,0));
+      const subtotal=Number(venda.subtotal||items.reduce((s,x)=>s+Number(x.price||0)*Number(x.qty||0),0));
       const total=Number(venda.total||0);
       const W=1080;
       const rowH=items.length>1?150:250;
@@ -1363,7 +1407,8 @@
       const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const c=canvas.getContext('2d');
       c.fillStyle='#fffaf3';c.fillRect(0,0,W,H);c.strokeStyle='#b78335';c.lineWidth=3;c.strokeRect(20,20,W-40,H-40);c.strokeRect(32,32,W-64,H-64);
       c.textAlign='center';c.fillStyle='#a87936';c.font='italic 96px Georgia';c.fillText('Chic Mood',W/2,165);c.font='25px Georgia';c.fillText('S E M I J O I A S   •   P E R F U M E S',W/2,220);c.fillStyle='#2f2118';c.font='bold 64px Georgia';c.fillText('RECIBO DE VENDA',W/2,315);
-      // Bloco superior do recibo dividido em 3 colunas, evitando textos fora do quadro.
+
+      // Bloco superior do recibo dividido em 3 colunas.
       const infoX=70, infoY=355, infoW=W-140, infoH=110;
       const infoColW=infoW/3;
       roundRect(c,infoX,infoY,infoW,infoH,20);
@@ -1379,41 +1424,97 @@
       c.fillText('DATA DA VENDA',infoCenters[0],395);
       c.fillText('Nº DO RECIBO',infoCenters[1],395);
       c.fillText('ATENDIMENTO',infoCenters[2],395);
-      c.font='25px Arial';
       fitCanvasText(c,new Date(venda.created_at||Date.now()).toLocaleDateString('pt-BR'),infoCenters[0],435,infoColW-36,25,'Arial');
       fitCanvasText(c,receiptNumber(venda.numero_recibo),infoCenters[1],435,infoColW-36,25,'Arial');
       fitCanvasText(c,'Chic Mood',infoCenters[2],435,infoColW-36,25,'Arial');
-      let y=500;c.fillStyle='#f6e7d4';roundRect(c,70,y,W-140,58,18);c.fill();c.fillStyle='#3b291e';c.font='24px Arial';c.textAlign='left';c.fillText('PRODUTO',120,y+38);c.fillText('QTD.',620,y+38);c.fillText('VALOR UNIT.',735,y+38);c.fillText('TOTAL',930,y+38);
+
+      // Coordenadas fixas das colunas. Valores monetários ficam alinhados à direita
+      // e têm redução automática da fonte para nunca ultrapassarem o quadro.
+      const productTextX=235;
+      const productMaxWidth=350;
+      const qtyCenterX=635;
+      const qtyMaxWidth=72;
+      const unitRightX=825;
+      const unitMaxWidth=150;
+      const totalRightX=980;
+      const totalMaxWidth=135;
+
+      let y=500;
+      c.fillStyle='#f6e7d4';roundRect(c,70,y,W-140,58,18);c.fill();
+      c.fillStyle='#3b291e';c.font='24px Arial';
+      c.textAlign='left';c.fillText('PRODUTO',120,y+38);
+      c.textAlign='center';c.fillText('QTD.',qtyCenterX,y+38);
+      c.textAlign='right';
+      fitCanvasText(c,'VALOR UNIT.',unitRightX,y+38,unitMaxWidth,24,'Arial','',16);
+      fitCanvasText(c,'TOTAL',totalRightX,y+38,totalMaxWidth,24,'Arial','',16);
+
       y+=70;
       for(const item of items){
         roundRect(c,70,y,W-140,rowH-10,16);c.strokeStyle='#e2c9a4';c.stroke();
         let img=null;try{img=await loadCanvasImage(item.image)}catch(_){img=null}
         if(img){c.save();roundRect(c,90,y+18,120,rowH-46,12);c.clip();c.drawImage(img,90,y+18,120,rowH-46);c.restore()}
-        c.textAlign='left';c.fillStyle='#39271c';c.font=items.length>1?'22px Georgia':'28px Georgia';wrapText(c,item.name,235,y+52,350,34);
-        c.fillStyle='#a87936';c.font='18px Arial';c.fillText(item.category==='perfumes'?'PERFUME':'SEMIJOIA',235,y+rowH-34);
-        c.fillStyle='#39271c';c.font='27px Arial';c.fillText(String(item.qty),630,y+rowH/2);c.fillText(money(item.price),720,y+rowH/2);c.font='bold 27px Arial';c.fillText(money(item.price*item.qty),900,y+rowH/2);y+=rowH;
+
+        c.textAlign='left';c.fillStyle='#39271c';c.font=items.length>1?'22px Georgia':'28px Georgia';
+        wrapText(c,item.name,productTextX,y+52,productMaxWidth,34);
+        c.fillStyle='#a87936';c.font='18px Arial';
+        c.fillText(item.category==='perfumes'?'PERFUME':'SEMIJOIA',productTextX,y+rowH-34);
+
+        const qty=Number(item.qty||0);
+        const unitPrice=Number(item.price||0);
+        const lineTotal=unitPrice*qty;
+        const valueY=y+rowH/2+9;
+
+        c.fillStyle='#39271c';
+        c.textAlign='center';
+        fitCanvasText(c,String(qty),qtyCenterX,valueY,qtyMaxWidth,27,'Arial','',16);
+
+        c.textAlign='right';
+        fitCanvasText(c,money(unitPrice),unitRightX,valueY,unitMaxWidth,27,'Arial','',15);
+        fitCanvasText(c,money(lineTotal),totalRightX,valueY,totalMaxWidth,27,'Arial','bold',14);
+        y+=rowH;
       }
+
       y+=18;
       const summaryHeight=summaryLineCount*44+52;
       roundRect(c,70,y,W-140,summaryHeight,18);c.strokeStyle='#d8b887';c.stroke();
-      let sy=y+42;c.textAlign='left';c.font='24px Arial';c.fillStyle='#594235';c.fillText('Produtos',130,sy);c.textAlign='right';c.fillText(money(subtotal),940,sy);
-      for(const extra of extras){sy+=42;c.textAlign='left';c.fillText(String(extra.descricao||'Adicional').slice(0,42),130,sy);c.textAlign='right';c.fillText(`+ ${money(extra.valor)}`,940,sy)}
-      if(discount>0){sy+=42;c.textAlign='left';c.fillText('Desconto',130,sy);c.textAlign='right';c.fillText(`− ${money(discount)}`,940,sy)}
-      sy+=52;c.textAlign='left';c.fillStyle='#a87936';c.font='bold 30px Arial';c.fillText('TOTAL GERAL',130,sy);c.textAlign='right';c.font='bold 48px Georgia';c.fillText(money(total),940,sy);
-      y+=summaryHeight+95;c.textAlign='center';c.fillStyle='#2f2118';c.font='italic 40px Georgia';c.fillText('Obrigada pela confiança! ♡',W/2,y);c.fillStyle='#a87936';c.font='22px Arial';c.fillText('SUA ESSÊNCIA, SEU BRILHO.',W/2,y+62);
-      c.textAlign='left';c.fillStyle='#594235';c.font='23px Arial';c.fillText(`CLIENTE: ${venda.cliente}`,100,y+125);c.fillText(`PAGAMENTO: ${venda.forma_pagamento||''}`,100,y+165);
-      c.textAlign='center';c.fillStyle='#a87936';c.fillText('@_chicmood_',W/2,H-70);
+      let sy=y+42;
+      c.textAlign='left';c.font='24px Arial';c.fillStyle='#594235';c.fillText('Produtos',130,sy);
+      c.textAlign='right';fitCanvasText(c,money(subtotal),940,sy,310,24,'Arial','',16);
+
+      for(const extra of extras){
+        sy+=42;
+        c.textAlign='left';c.font='24px Arial';c.fillText(String(extra.descricao||'Adicional').slice(0,42),130,sy);
+        c.textAlign='right';fitCanvasText(c,`+ ${money(extra.valor)}`,940,sy,310,24,'Arial','',16);
+      }
+
+      if(discount>0){
+        sy+=42;
+        c.textAlign='left';c.font='24px Arial';c.fillText('Desconto',130,sy);
+        c.textAlign='right';fitCanvasText(c,`− ${money(discount)}`,940,sy,310,24,'Arial','',16);
+      }
+
+      sy+=52;
+      c.textAlign='left';c.fillStyle='#a87936';c.font='bold 30px Arial';c.fillText('TOTAL GERAL',130,sy);
+      c.textAlign='right';fitCanvasText(c,money(total),940,sy,390,48,'Georgia','bold',24);
+
+      y+=summaryHeight+95;
+      c.textAlign='center';c.fillStyle='#2f2118';c.font='italic 40px Georgia';c.fillText('Obrigada pela confiança! ♡',W/2,y);
+      c.fillStyle='#a87936';c.font='22px Arial';c.fillText('SUA ESSÊNCIA, SEU BRILHO.',W/2,y+62);
+      c.textAlign='left';c.fillStyle='#594235';c.font='23px Arial';
+      fitCanvasText(c,`CLIENTE: ${venda.cliente||''}`,100,y+125,W-200,23,'Arial','',15);
+      fitCanvasText(c,`PAGAMENTO: ${venda.forma_pagamento||''}`,100,y+165,W-200,23,'Arial','',15);
+      c.textAlign='center';c.fillStyle='#a87936';c.font='23px Arial';c.fillText('@_chicmood_',W/2,H-70);
       return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Falha ao gerar o recibo.')),'image/jpeg',.92));
     }
     function roundRect(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r)}
-    function fitCanvasText(c,text,x,y,maxWidth,startSize=25,fontFamily='Arial',fontWeight=''){
+    function fitCanvasText(c,text,x,y,maxWidth,startSize=25,fontFamily='Arial',fontWeight='',minSize=14){
       let size=startSize;
       const value=String(text??'');
       do{
         c.font=`${fontWeight ? fontWeight+' ' : ''}${size}px ${fontFamily}`;
-        if(c.measureText(value).width<=maxWidth||size<=14)break;
+        if(c.measureText(value).width<=maxWidth||size<=minSize)break;
         size-=1;
-      }while(size>14);
+      }while(size>minSize);
       c.fillText(value,x,y);
     }
     function wrapText(c,text,x,y,maxWidth,lineHeight){const words=String(text).split(' ');let line='';for(const word of words){const test=line+word+' ';if(c.measureText(test).width>maxWidth&&line){c.fillText(line,x,y);line=word+' ';y+=lineHeight}else line=test}c.fillText(line,x,y)}
@@ -1432,8 +1533,8 @@
       const list=receiptsCache.filter(v=>(status==='todos'||v.status===status)&&(!q||String(v.numero_recibo).includes(q)||String(v.cliente||'').toLowerCase().includes(q)));
       document.getElementById('receiptList').innerHTML=list.length?list.map(v=>{
         const extras=Array.isArray(v.adicionais)?v.adicionais:[];
-        const extrasHtml=extras.map(x=>`<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>${escapeHtml(x.descricao||'Adicional')}</span><span>+ ${money(x.valor)}</span></div>`).join('');
-        return `<article class="receipt-card ${v.status==='cancelada'?'cancelled':''}"><div class="receipt-meta"><div><b>Recibo nº ${receiptNumber(v.numero_recibo)}</b>${v.origem==='historica'?' <span class="origin-pill">Venda anterior</span>':''}<br><small>${dateBR(v.created_at)} • ${escapeHtml(v.cliente||'')}</small></div><span class="status-pill ${v.status==='cancelada'?'cancelled':''}">${v.status==='cancelada'?'Cancelado':'Concluído'}</span></div>${v.recibo_url?`<img src="${v.recibo_url}" loading="lazy">`:'<div style="padding:40px;text-align:center;color:var(--muted)">Imagem não disponível</div>'}<div style="display:flex;justify-content:space-between"><span>${v.venda_itens?.length||0} item(ns)</span><b>${money(v.total)}</b></div>${extrasHtml}${Number(v.desconto||0)>0?`<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>Desconto</span><span>− ${money(v.desconto)}</span></div>`:''}<div class="btn-container" style="margin-top:12px">${v.recibo_url?`<a class="ghost" style="text-decoration:none;text-align:center" href="${v.recibo_url}" target="_blank">Abrir recibo</a>`:''}${v.status!=='cancelada'?`<button class="danger" onclick="cancelSale('${v.id}',${v.numero_recibo},'${v.origem||'painel'}')">Cancelar venda</button>`:''}</div></article>`;
+        const extrasHtml=extras.map(x=>`<div class="receipt-detail-row"><span>${escapeHtml(x.descricao||'Adicional')}</span><span>+ ${money(x.valor)}</span></div>`).join('');
+        return `<article class="receipt-card ${v.status==='cancelada'?'cancelled':''}"><div class="receipt-meta"><div><b>Recibo nº ${receiptNumber(v.numero_recibo)}</b>${v.origem==='historica'?' <span class="origin-pill">Venda anterior</span>':''}<br><small>${dateBR(v.created_at)} • ${escapeHtml(v.cliente||'')}</small></div><span class="status-pill ${v.status==='cancelada'?'cancelled':''}">${v.status==='cancelada'?'Cancelado':'Concluído'}</span></div>${v.recibo_url?`<img src="${v.recibo_url}" loading="lazy">`:'<div style="padding:40px;text-align:center;color:var(--muted)">Imagem não disponível</div>'}<div class="receipt-total-row"><span>${v.venda_itens?.length||0} item(ns)</span><b>${money(v.total)}</b></div>${extrasHtml}${Number(v.desconto||0)>0?`<div class="receipt-detail-row"><span>Desconto</span><span>− ${money(v.desconto)}</span></div>`:''}<div class="btn-container" style="margin-top:12px">${v.recibo_url?`<a class="ghost" style="text-decoration:none;text-align:center" href="${v.recibo_url}" target="_blank">Abrir recibo</a>`:''}${v.status!=='cancelada'?`<button class="danger" onclick="cancelSale('${v.id}',${v.numero_recibo},'${v.origem||'painel'}')">Cancelar venda</button>`:''}</div></article>`;
       }).join(''):'<div style="color:var(--muted);padding:30px">Nenhum recibo encontrado.</div>';
     }
     async function cancelSale(id,number,origin='painel'){const historical=origin==='historica';if(!confirm(`Cancelar o recibo nº ${receiptNumber(number)}?
