@@ -122,6 +122,12 @@
     .product button{width:100%}
     
     .badge-esgotado { position:absolute; top:12px; right:12px; background:#9b2f2f; color:#fff; padding:5px 12px; border-radius:999px; font-size:11px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; z-index:2; box-shadow:0 4px 10px rgba(0,0,0,0.15) }
+    .badge-novo { position:absolute; top:12px; left:12px; background:linear-gradient(135deg,var(--gold),var(--gold2)); color:#fff; padding:6px 12px; border-radius:999px; font-size:11px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; z-index:2; box-shadow:0 4px 12px rgba(168,121,54,.28) }
+    .pagination{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;margin:28px 0 4px}
+    .pagination button{min-width:42px;height:42px;border:1px solid var(--line);background:#fffaf3;color:var(--text);border-radius:999px;padding:0 13px;cursor:pointer;box-shadow:0 5px 14px rgba(89,55,24,.05)}
+    .pagination button.active{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#fff;border-color:transparent}
+    .pagination button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+    .pagination-info{width:100%;text-align:center;color:var(--muted);font-size:13px;margin-top:4px}
     .btn-disabled { border:1px solid var(--line); background:#e2d9cf !important; color:var(--muted) !important; cursor:not-allowed !important; opacity:0.75; box-shadow:none !important; }
     
     .var-btn { background: #fffaf3; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; cursor: pointer; color: var(--text); font-family: inherit; font-size: 15px; transition: 0.2s; }
@@ -203,7 +209,7 @@
       <a href="#semijoias" onclick="setCategory('semijoias')">Semijoias</a>
       <a href="#perfumes" onclick="setCategory('perfumes')">Perfumes</a>
       
-      <a href="https://instagram.com/seu_instagram_aqui" target="_blank" class="ig-link" title="Siga nosso Instagram">
+      <a href="https://www.instagram.com/_chicmood_/" target="_blank" class="ig-link" title="Siga nosso Instagram">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
           <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
@@ -237,20 +243,25 @@
         <button class="chip" data-cat="semijoias" onclick="setCategory('semijoias')">Semijoias</button>
         <button class="chip" data-cat="perfumes" onclick="setCategory('perfumes')">Perfumes</button>
         
-        <select id="subFilter" onchange="renderProducts()">
+        <select id="banhoFilter" onchange="resetProductsPage()" style="display:none">
+          <option value="todos">Todos os banhos</option>
+        </select>
+
+        <select id="subFilter" onchange="resetProductsPage()">
           <option value="todos">Todos os Gêneros/Linhas</option>
         </select>
         
-        <select id="marcaFilter" onchange="renderProducts()">
+        <select id="marcaFilter" onchange="resetProductsPage()">
           <option value="todos">Todas as Marcas</option>
         </select>
       </div>
 
       <div class="search-wrapper">
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Digite para buscar um produto..." oninput="renderProducts()">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Digite para buscar um produto..." oninput="resetProductsPage()">
       </div>
 
       <div id="productsGrid" class="grid"></div>
+      <div id="productsPagination" class="pagination"></div>
     </section>
   </main>
 
@@ -300,15 +311,42 @@
     const FREE_SHIPPING_MIN = 350;
     let currentCategory = 'todos'; let shipping = 0; let currentPhotoIndex = 0; let currentDetailId = null;
     let currentVarIndex = null;
+    let currentPage = 1;
+    const PRODUCTS_PER_PAGE = 12;
 
     let cart = JSON.parse(localStorage.getItem('chicMoodCartV4')||'[]');
     let globalProducts = [];
     const fallbackImg = 'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#f3dfc6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#a87936" font-family="serif" font-size="44">Chic Mood</text></svg>`);
     
+    const PRODUCT_META_SEPARATOR='__CM_META__';
+
+    function parseStoredSubcategory(value){
+      const raw=String(value||'');
+      const separatorIndex=raw.indexOf(PRODUCT_META_SEPARATOR);
+      if(separatorIndex===-1) return {subcategory:raw,banho:'',createdAt:null};
+      const subcategory=raw.slice(0,separatorIndex);
+      const encodedMeta=raw.slice(separatorIndex+PRODUCT_META_SEPARATOR.length);
+      try{
+        const meta=JSON.parse(decodeURIComponent(encodedMeta));
+        return {
+          subcategory,
+          banho:String(meta.banho||''),
+          createdAt:meta.createdAt||null
+        };
+      }catch(error){
+        console.warn('Metadados do produto não puderam ser lidos:',error);
+        return {subcategory:raw,banho:'',createdAt:null};
+      }
+    }
+
     async function fetchProductsFromNuvem(){
       const { data, error } = await db.from('produtos').select('*').order('id', { ascending: false });
       if(error) { console.error(error); return []; }
-      return data.map(p => {
+      return (data||[]).map(p => {
+        const parsed=parseStoredSubcategory(p.subcategory);
+        p.subcategory=parsed.subcategory;
+        p.banho=parsed.banho;
+        p.productCreatedAt=parsed.createdAt;
         if(!p.images || p.images.length === 0) p.images = [fallbackImg];
         if(!p.shortDescription) p.shortDescription = p.description || '';
         if(!p.video) p.video = '';
@@ -319,28 +357,38 @@
     
     async function setCategory(cat){
       currentCategory = cat;
+      currentPage = 1;
       document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
       
       const botFlutuante = document.getElementById('perfumeCustomBot');
-      if (cat === 'perfumes') {
-        botFlutuante.style.display = 'inline-flex';
-      } else {
-        botFlutuante.style.display = 'none';
-      }
+      botFlutuante.style.display = cat === 'perfumes' ? 'inline-flex' : 'none';
+
+      const bathFilter=document.getElementById('banhoFilter');
+      bathFilter.style.display=cat==='semijoias'?'':'none';
+      if(cat!=='semijoias') bathFilter.value='todos';
       
       await updateFilters(); await renderProducts();
       document.getElementById('produtos').scrollIntoView({behavior:'smooth'})
     }
     
     async function updateFilters(){
+      const bathSel = document.getElementById('banhoFilter'); const oldBath = bathSel.value;
       const subSel = document.getElementById('subFilter'); const oldSub = subSel.value;
       const marcaSel = document.getElementById('marcaFilter'); const oldMarca = marcaSel.value;
       
       if(globalProducts.length === 0) globalProducts = await fetchProductsFromNuvem();
       let ps = globalProducts.filter(p => currentCategory === 'todos' || p.category === currentCategory);
+
+      bathSel.style.display=currentCategory==='semijoias'?'':'none';
+      if(currentCategory==='semijoias'){
+        const baths=[...new Set(ps.map(p=>p.banho).filter(Boolean))].sort();
+        bathSel.innerHTML='<option value="todos">Todos os banhos</option>'+baths.map(b=>`<option value="${b}">${b}</option>`).join('');
+        bathSel.value=baths.includes(oldBath)?oldBath:'todos';
+      }else bathSel.value='todos';
       
       let subs = [...new Set(ps.map(p => p.subcategory).filter(Boolean))].sort();
-      subSel.innerHTML = '<option value="todos">Todos os Gêneros/Linhas</option>' + subs.map(s => `<option value="${s}">${s}</option>`).join('');
+      const firstSubOption=currentCategory==='semijoias'?'Todos os tipos de joia':'Todos os Gêneros/Linhas';
+      subSel.innerHTML = `<option value="todos">${firstSubOption}</option>` + subs.map(s => `<option value="${s}">${s}</option>`).join('');
       if(subs.includes(oldSub)) subSel.value = oldSub;
 
       let marcas = [...new Set(ps.map(p => p.marca).filter(Boolean))].sort();
@@ -348,30 +396,77 @@
       if(marcas.includes(oldMarca)) marcaSel.value = oldMarca;
     }
     
+    function isNewProduct(createdAt){
+      if(!createdAt) return false;
+      const created=new Date(createdAt);
+      if(Number.isNaN(created.getTime())) return false;
+      const age=Date.now()-created.getTime();
+      return age>=0 && age<=7*24*60*60*1000;
+    }
+
+    function resetProductsPage(){
+      currentPage=1;
+      renderProducts();
+    }
+
+    function goToProductsPage(page){
+      currentPage=page;
+      renderProducts();
+      document.getElementById('produtos').scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    function renderPagination(totalPages,totalItems){
+      const box=document.getElementById('productsPagination');
+      if(!box) return;
+      if(totalPages<=1){
+        box.innerHTML=totalItems?`<div class="pagination-info">${totalItems} produto(s) encontrado(s)</div>`:'';
+        return;
+      }
+      const pages=[];
+      const start=Math.max(1,currentPage-2);
+      const end=Math.min(totalPages,currentPage+2);
+      pages.push(`<button ${currentPage===1?'disabled':''} onclick="goToProductsPage(${currentPage-1})">‹</button>`);
+      if(start>1){
+        pages.push(`<button onclick="goToProductsPage(1)">1</button>`);
+        if(start>2) pages.push('<button disabled>…</button>');
+      }
+      for(let page=start;page<=end;page++) pages.push(`<button class="${page===currentPage?'active':''}" onclick="goToProductsPage(${page})">${page}</button>`);
+      if(end<totalPages){
+        if(end<totalPages-1) pages.push('<button disabled>…</button>');
+        pages.push(`<button onclick="goToProductsPage(${totalPages})">${totalPages}</button>`);
+      }
+      pages.push(`<button ${currentPage===totalPages?'disabled':''} onclick="goToProductsPage(${currentPage+1})">›</button>`);
+      pages.push(`<div class="pagination-info">Página ${currentPage} de ${totalPages} • ${totalItems} produto(s)</div>`);
+      box.innerHTML=pages.join('');
+    }
+
     async function renderProducts(){
+      const banho = document.getElementById('banhoFilter').value;
       const sub = document.getElementById('subFilter').value;
       const marca = document.getElementById('marcaFilter').value;
-      
-      // PEGA O VALOR DIGITADO NO CAMPO DE BUSCA
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
       
       if(globalProducts.length === 0) globalProducts = await fetchProductsFromNuvem();
       
       let ps = globalProducts.filter(p => {
         const matchesCat = currentCategory === 'todos' || p.category === currentCategory;
+        const matchesBath = currentCategory !== 'semijoias' || banho === 'todos' || p.banho === banho;
         const matchesSub = sub === 'todos' || p.subcategory === sub;
         const matchesMarca = marca === 'todos' || p.marca === marca;
-        
-        // LOGICA DE BUSCA: Procura por nome, marca ou subcategoria
         const nameMatch = p.name ? p.name.toLowerCase().includes(query) : false;
         const brandMatch = p.marca ? p.marca.toLowerCase().includes(query) : false;
         const subCatMatch = p.subcategory ? p.subcategory.toLowerCase().includes(query) : false;
-        const matchesQuery = query === '' || nameMatch || brandMatch || subCatMatch;
-
-        return matchesCat && matchesSub && matchesMarca && matchesQuery;
+        const bathMatch = p.banho ? p.banho.toLowerCase().includes(query) : false;
+        const matchesQuery = query === '' || nameMatch || brandMatch || subCatMatch || bathMatch;
+        return matchesCat && matchesBath && matchesSub && matchesMarca && matchesQuery;
       });
+
+      const totalPages=Math.max(1,Math.ceil(ps.length/PRODUCTS_PER_PAGE));
+      if(currentPage>totalPages) currentPage=totalPages;
+      const pageStart=(currentPage-1)*PRODUCTS_PER_PAGE;
+      const pageProducts=ps.slice(pageStart,pageStart+PRODUCTS_PER_PAGE);
       
-      document.getElementById('productsGrid').innerHTML = ps.length ? ps.map((p, index) => {
+      document.getElementById('productsGrid').innerHTML = pageProducts.length ? pageProducts.map((p, index) => {
         const hasVar = p.variacoes && p.variacoes.length > 0;
         let displayPrice = '';
         let isEsgotado = false;
@@ -387,27 +482,30 @@
         }
 
         const hasVideo = p.video && String(p.video).trim() !== '' && String(p.video).trim() !== 'null';
-        const labelHTML = isEsgotado ? `<div class="badge-esgotado">Fora de Estoque</div>` : '';
+        const stockBadge = isEsgotado ? `<div class="badge-esgotado">Fora de Estoque</div>` : '';
+        const newBadge = isNewProduct(p.productCreatedAt) ? `<div class="badge-novo">Novo produto</div>` : '';
         const btnHTML = isEsgotado 
           ? `<button class="cartBtn btn-disabled" disabled>Fora de estoque</button>`
           : `<button class="primary" onclick="quickAddFromCard(event, ${p.id})">${hasVar ? 'Ver opções' : 'Adicionar ao carrinho'}</button>`;
         
         const subText = p.subcategory || '';
-        const marcaText = p.marca ? (subText ? ' • ' + p.marca : p.marca) : '';
+        const banhoText = p.category==='semijoias' && p.banho ? p.banho : '';
+        const details=[banhoText,subText,p.marca||''].filter(Boolean).join(' • ');
         
         return `<article class="product" onclick="openDetails(${p.id})">
-          ${labelHTML}
+          ${newBadge}${stockBadge}
           <img src="${p.images?.[0]||fallbackImg}" alt="${p.name || 'Produto Chic Mood'}" loading="${index < 4 ? 'eager' : 'lazy'}" decoding="async" fetchpriority="${index === 0 ? 'high' : 'low'}" onerror="this.onerror=null;this.src=fallbackImg">
           <div class="info">
             <div class="cat">${p.category==='semijoias'?'Semijoias':'Perfumes'}</div>
             <h3>${p.name}</h3>
-            <div class="sub">${subText}${marcaText}${hasVideo ?' <span class="videoBadge">• vídeo</span>':''}</div>
+            <div class="sub">${details}${hasVideo ?' <span class="videoBadge">• vídeo</span>':''}</div>
             <p style="color:var(--muted)">${p.shortDescription||''}</p>
             <div class="price">${displayPrice}</div>
             ${btnHTML}
           </div>
         </article>`
       }).join('') : '<div class="empty">Nenhum produto encontrado com estes filtros ou busca.</div>';
+      renderPagination(ps.length?totalPages:0,ps.length);
     }
     
     function openDetails(id){ 
@@ -495,7 +593,7 @@
       }
       
       const subText = p.subcategory || '';
-      const marcaText = p.marca ? (subText ? ' • ' + p.marca : p.marca) : '';
+      const detailMeta=[p.category==='semijoias'?p.banho:'',subText,p.marca||''].filter(Boolean).join(' • ');
 
       document.getElementById('detailsContent').innerHTML = `
         <div class="detailsGrid">
@@ -504,7 +602,7 @@
             <div class="thumbs">${thumbsHTML}</div>
           </div>
           <div>
-            <div class="cat">${p.category === 'semijoias' ? 'Semijoias' : 'Perfumes'} • ${subText}${marcaText}</div>
+            <div class="cat">${p.category === 'semijoias' ? 'Semijoias' : 'Perfumes'}${detailMeta ? ' • '+detailMeta : ''}</div>
             <h2>${p.name}</h2>
             ${p.codigo ? `<small style="color:var(--muted); display:block; margin-top:-6px; margin-bottom:10px;">Ref: ${p.codigo}</small>` : ''}
             <div class="price" style="font-size:28px;">${precoFinalHTML}</div>
@@ -660,7 +758,12 @@
       renderCart();
     }
     
-    async function init(){ await updateFilters(); await renderProducts(); renderCart(); }
+    async function init(){
+      await updateFilters();
+      document.getElementById('banhoFilter').style.display='none';
+      await renderProducts();
+      renderCart();
+    }
     init();
   </script>
   <div id="quickAddedToast" class="quick-added-toast">Produto adicionado ao carrinho ✨</div>
