@@ -76,7 +76,25 @@
     .var-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: center; background: var(--card); padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
 
     /* FILTROS E MESA DE ESTOQUE */
-    .admin-filters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; background: var(--sidebar-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
+    .admin-filter-panel { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:18px; box-shadow:var(--shadow); }
+    .admin-filter-head { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; }
+    .admin-filter-title strong { display:block; color:var(--gold); font-size:15px; margin-bottom:3px; }
+    .admin-filter-title span { color:var(--muted); font-size:12px; }
+    .admin-filter-toggle { border:1px solid var(--border); background:var(--bg); color:var(--gold); border-radius:999px; padding:8px 13px; font-size:12px; font-weight:800; cursor:pointer; }
+    .admin-filter-body { margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
+    .admin-filter-panel.collapsed .admin-filter-body { display:none; }
+    .admin-filters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:0; }
+    .admin-filter-field { display:flex; flex-direction:column; gap:6px; min-width:0; }
+    .admin-filter-field label { font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.65px; }
+    .admin-filter-search { grid-column:span 2; }
+    .admin-filter-search-wrap { position:relative; }
+    .admin-filter-search-wrap span { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--gold); pointer-events:none; }
+    .admin-filter-search-wrap input { padding-left:39px; background:#fff; }
+    .admin-filter-actions { display:flex; align-items:flex-end; }
+    .admin-filter-actions button { width:100%; min-height:43px; padding:10px 14px; }
+    .admin-filter-summary { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:13px; padding-top:12px; border-top:1px dashed var(--border); color:var(--muted); font-size:12px; }
+    .admin-filter-summary strong { color:var(--text); }
+    .admin-bath-pill { display:inline-flex; align-items:center; border-radius:999px; padding:3px 8px; background:var(--gold-light); color:var(--gold); font-size:10px; font-weight:800; margin-right:4px; }
     .bulk-actions { background: linear-gradient(135deg, var(--gold-light), #fff); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 20px; box-shadow: var(--shadow); }
     .bulk-actions-top { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; }
     .bulk-actions-top strong { color:var(--gold); display:block; margin-bottom:4px; }
@@ -123,7 +141,9 @@
       .main-content { margin-left: 0; padding: 18px 14px 26px; max-width: none; width: 100%; }
       h2 { font-size: 25px; margin-bottom: 16px; }
       .card-section { padding: 18px 14px; border-radius: 18px; margin-bottom: 16px; }
-      .formGrid, .admin-filters { grid-template-columns: 1fr; gap: 12px; }
+      .formGrid { grid-template-columns:1fr; gap:12px; }
+      .admin-filters { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+      .admin-filter-search { grid-column:1 / -1; }
       .btn-container { flex-direction: column; gap: 10px; }
       .btn-container button { width: 100%; }
       .var-builder > div[style*='display: flex'] { display: grid !important; grid-template-columns: 1fr; }
@@ -146,7 +166,10 @@
       .sidebar .menu-group:last-child { grid-template-columns: 1fr; }
       .main-content { padding: 14px 10px 22px; }
       .card-section h3 { font-size: 13px; }
-      .admin-filters { padding: 12px; position: sticky; top: 123px; z-index: 30; box-shadow: 0 8px 20px rgba(89,55,24,.06); }
+      .admin-filter-panel { padding:14px; }
+      .admin-filters { grid-template-columns:1fr; }
+      .admin-filter-search { grid-column:auto; }
+      .admin-filter-summary { flex-direction:column; gap:5px; }
       .adminProduct { grid-template-columns: 28px 64px 1fr; gap: 8px; }
       .adminProduct img { width: 64px; height: 64px; }
       .adminProduct h4 { font-size: 15px !important; line-height: 1.25; }
@@ -341,6 +364,7 @@
                 <option value="">Selecione o banho</option>
                 <option value="Banhado a ouro">Banhado a ouro</option>
                 <option value="Banhado a ródio">Banhado a ródio</option>
+                <option value="Prata">Prata</option>
                 <option value="Outro / sem banho">Outro / sem banho</option>
               </select>
             </div>
@@ -448,21 +472,75 @@
           </div>
         </div>
 
-        <div class="admin-filters">
-          <select id="filterAdminCat" onchange="renderAdmin()">
-            <option value="todos">Todas as Categorias</option>
-            <option value="semijoias">Semijoias</option>
-            <option value="perfumes">Perfumes</option>
-          </select>
-          <select id="filterAdminBanho" onchange="renderAdmin()" style="display:none">
-            <option value="todos">Todos os banhos</option>
-          </select>
-          <select id="filterAdminSub" onchange="renderAdmin()">
-            <option value="todos">Todos os Gêneros/Linhas</option>
-          </select>
-          <select id="filterAdminMarca" onchange="renderAdmin()">
-            <option value="todos">Todas as Marcas</option>
-          </select>
+        <div id="adminFilterPanel" class="admin-filter-panel">
+          <div class="admin-filter-head">
+            <div class="admin-filter-title">
+              <strong>Localizar produtos</strong>
+              <span>Use somente os filtros necessários. A seleção em massa respeita o resultado exibido.</span>
+            </div>
+            <button id="adminFilterToggle" type="button" class="admin-filter-toggle" onclick="toggleAdminFilterPanel()">Ocultar filtros</button>
+          </div>
+
+          <div class="admin-filter-body">
+            <div class="admin-filters">
+              <div class="admin-filter-field admin-filter-search">
+                <label for="filterAdminSearch">Buscar</label>
+                <div class="admin-filter-search-wrap">
+                  <span>⌕</span>
+                  <input id="filterAdminSearch" placeholder="Nome, referência, marca, tipo ou banho..." oninput="applyAdminFilters()">
+                </div>
+              </div>
+
+              <div class="admin-filter-field">
+                <label for="filterAdminCat">Categoria</label>
+                <select id="filterAdminCat" onchange="handleAdminCategoryChange()">
+                  <option value="todos">Todas as categorias</option>
+                  <option value="semijoias">Semijoias</option>
+                  <option value="perfumes">Perfumes</option>
+                </select>
+              </div>
+
+              <div id="filterAdminBathField" class="admin-filter-field" style="display:none">
+                <label for="filterAdminBanho">Banho / material</label>
+                <select id="filterAdminBanho" onchange="applyAdminFilters()">
+                  <option value="todos">Todos os banhos</option>
+                </select>
+              </div>
+
+              <div class="admin-filter-field">
+                <label id="filterAdminSubLabel" for="filterAdminSub">Tipo ou linha</label>
+                <select id="filterAdminSub" onchange="applyAdminFilters()">
+                  <option value="todos">Todos os tipos e linhas</option>
+                </select>
+              </div>
+
+              <div class="admin-filter-field">
+                <label for="filterAdminMarca">Marca</label>
+                <select id="filterAdminMarca" onchange="applyAdminFilters()">
+                  <option value="todos">Todas as marcas</option>
+                </select>
+              </div>
+
+              <div class="admin-filter-field">
+                <label for="filterAdminStock">Estoque</label>
+                <select id="filterAdminStock" onchange="applyAdminFilters()">
+                  <option value="todos">Todos os estoques</option>
+                  <option value="disponivel">Com estoque</option>
+                  <option value="esgotado">Esgotados</option>
+                  <option value="variacoes">Com variações</option>
+                </select>
+              </div>
+
+              <div class="admin-filter-actions">
+                <button type="button" class="ghost" onclick="clearAdminFilters()">Limpar filtros</button>
+              </div>
+            </div>
+
+            <div class="admin-filter-summary">
+              <span id="adminActiveFilters"><strong>Todos os produtos</strong></span>
+              <span id="adminFilterResult">Carregando catálogo...</span>
+            </div>
+          </div>
         </div>
 
         <div class="bulk-actions">
@@ -486,6 +564,7 @@
               <option value="">Escolha o banho que será aplicado</option>
               <option value="Banhado a ouro">Banhado a ouro</option>
               <option value="Banhado a ródio">Banhado a ródio</option>
+              <option value="Prata">Prata</option>
               <option value="Outro / sem banho">Outro / sem banho</option>
             </select>
             <button id="applyBulkBathBtn" type="button" class="primary" onclick="applyBathToSelectedProducts()" disabled>Aplicar aos selecionados</button>
@@ -641,6 +720,7 @@
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
     const ADMIN_PASSWORD='px0507cx';
+    const STANDARD_BATH_OPTIONS=['Banhado a ouro','Banhado a ródio','Prata','Outro / sem banho'];
     const RECEIPTS_BUCKET = 'recibos-vendas';
     let editingId=null; let editingImages=[]; let editingVideo=''; let localSelectedFiles=[]; let editingProductCreatedAt=null;
     let productVariacoes = [];
@@ -1166,28 +1246,119 @@
       }
     }
 
+    function normalizeAdminFilterText(value){
+      return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    }
+
+    function toggleAdminFilterPanel(){
+      const panel=document.getElementById('adminFilterPanel');
+      const button=document.getElementById('adminFilterToggle');
+      if(!panel||!button)return;
+      const collapsed=panel.classList.toggle('collapsed');
+      button.textContent=collapsed?'Mostrar filtros':'Ocultar filtros';
+    }
+
+    function clearAdminFilters(){
+      document.getElementById('filterAdminSearch').value='';
+      document.getElementById('filterAdminCat').value='todos';
+      document.getElementById('filterAdminBanho').value='todos';
+      document.getElementById('filterAdminSub').value='todos';
+      document.getElementById('filterAdminMarca').value='todos';
+      document.getElementById('filterAdminStock').value='todos';
+      updateAdminFilterOptions(adminProductsCache);
+      applyAdminFilters();
+    }
+
+    function handleAdminCategoryChange(){
+      updateAdminFilterOptions(adminProductsCache);
+      applyAdminFilters();
+    }
+
     function updateAdminFilterOptions(ps) {
       const cat = document.getElementById('filterAdminCat').value;
       const bathSel = document.getElementById('filterAdminBanho'); const oldBath = bathSel.value;
+      const bathField=document.getElementById('filterAdminBathField');
       const subSel = document.getElementById('filterAdminSub'); const oldSub = subSel.value;
       const marcaSel = document.getElementById('filterAdminMarca'); const oldMarca = marcaSel.value;
-      let filtered = ps.filter(p => cat === 'todos' || p.category === cat);
+      const subLabel=document.getElementById('filterAdminSubLabel');
+      const filtered = ps.filter(p => cat === 'todos' || p.category === cat);
 
       const showBath = cat === 'semijoias';
-      bathSel.style.display = showBath ? '' : 'none';
+      bathField.style.display = showBath ? '' : 'none';
       if(showBath){
-        const baths=[...new Set(filtered.map(p=>p.banho).filter(Boolean))].sort();
-        bathSel.innerHTML='<option value="todos">Todos os banhos</option>'+baths.map(b=>`<option value="${b}">${b}</option>`).join('');
-        bathSel.value=baths.includes(oldBath)?oldBath:'todos';
+        const customBaths=[...new Set(filtered.map(p=>p.banho).filter(Boolean))]
+          .filter(b=>!STANDARD_BATH_OPTIONS.includes(b))
+          .sort((a,b)=>a.localeCompare(b,'pt-BR'));
+        const baths=[...STANDARD_BATH_OPTIONS,...customBaths];
+        bathSel.innerHTML='<option value="todos">Todos os banhos e materiais</option><option value="__sem_banho__">Sem classificação de banho</option>'+baths.map(b=>`<option value="${escapeHtml(b)}">${escapeHtml(b)}</option>`).join('');
+        bathSel.value=(oldBath==='__sem_banho__'||baths.includes(oldBath))?oldBath:'todos';
       }else bathSel.value='todos';
 
-      let subs = [...new Set(filtered.map(p => p.subcategory).filter(Boolean))].sort();
-      const subLabel=cat==='semijoias'?'Todos os tipos de joia':'Todos os Gêneros/Linhas';
-      subSel.innerHTML = `<option value="todos">${subLabel}</option>` + subs.map(s => `<option value="${s}">${s}</option>`).join('');
-      if(subs.includes(oldSub)) subSel.value = oldSub;
-      let marcas = [...new Set(filtered.map(p => p.marca).filter(Boolean))].sort();
-      marcaSel.innerHTML = '<option value="todos">Todas as Marcas</option>' + marcas.map(m => `<option value="${m}">${m}</option>`).join('');
-      if(marcas.includes(oldMarca)) marcaSel.value = oldMarca;
+      const subs = [...new Set(filtered.map(p => p.subcategory).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+      const firstSubOption=cat==='semijoias'?'Todos os tipos de joia':(cat==='perfumes'?'Todas as linhas e gêneros':'Todos os tipos e linhas');
+      if(subLabel)subLabel.textContent=cat==='semijoias'?'Tipo de joia':(cat==='perfumes'?'Linha ou gênero':'Tipo ou linha');
+      subSel.innerHTML = `<option value="todos">${firstSubOption}</option>` + subs.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+      subSel.value=subs.includes(oldSub)?oldSub:'todos';
+
+      const marcas = [...new Set(filtered.map(p => p.marca).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+      marcaSel.innerHTML = '<option value="todos">Todas as marcas</option>' + marcas.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+      marcaSel.value=marcas.includes(oldMarca)?oldMarca:'todos';
+    }
+
+    function updateAdminFilterSummary(){
+      const cat=document.getElementById('filterAdminCat').value;
+      const bath=document.getElementById('filterAdminBanho').value;
+      const sub=document.getElementById('filterAdminSub').value;
+      const marca=document.getElementById('filterAdminMarca').value;
+      const stock=document.getElementById('filterAdminStock').value;
+      const search=document.getElementById('filterAdminSearch').value.trim();
+      const parts=[];
+      if(cat==='semijoias')parts.push('Semijoias');
+      else if(cat==='perfumes')parts.push('Perfumes');
+      else parts.push('Todos os produtos');
+      if(cat==='semijoias'&&bath!=='todos')parts.push(bath==='__sem_banho__'?'Sem banho definido':bath);
+      if(sub!=='todos')parts.push(sub);
+      if(marca!=='todos')parts.push(marca);
+      if(stock==='disponivel')parts.push('Com estoque');
+      if(stock==='esgotado')parts.push('Esgotados');
+      if(stock==='variacoes')parts.push('Com variações');
+      if(search)parts.push(`Busca: “${search}”`);
+      const active=document.getElementById('adminActiveFilters');
+      const result=document.getElementById('adminFilterResult');
+      if(active)active.innerHTML=`<strong>${parts.map(escapeHtml).join(' · ')}</strong>`;
+      if(result)result.textContent=`${adminFilteredProducts.length} de ${adminProductsCache.length} produto(s)`;
+    }
+
+    function productHasStock(product){
+      if(Array.isArray(product.variacoes)&&product.variacoes.length){
+        return product.variacoes.some(v=>Number(v.quantidade||0)>0);
+      }
+      return Number(product.quantidade||0)>0;
+    }
+
+    function applyAdminFilters(){
+      const ps=adminProductsCache||[];
+      const fCat=document.getElementById('filterAdminCat')?.value||'todos';
+      const fBath=document.getElementById('filterAdminBanho')?.value||'todos';
+      const fSub=document.getElementById('filterAdminSub')?.value||'todos';
+      const fMarca=document.getElementById('filterAdminMarca')?.value||'todos';
+      const fStock=document.getElementById('filterAdminStock')?.value||'todos';
+      const query=normalizeAdminFilterText(document.getElementById('filterAdminSearch')?.value||'');
+
+      adminFilteredProducts=ps.filter(p=>{
+        const matchesCat=fCat==='todos'||p.category===fCat;
+        const matchesBath=fCat!=='semijoias'||fBath==='todos'||(fBath==='__sem_banho__'?!p.banho:p.banho===fBath);
+        const matchesSub=fSub==='todos'||p.subcategory===fSub;
+        const matchesMarca=fMarca==='todos'||p.marca===fMarca;
+        const hasVariations=Array.isArray(p.variacoes)&&p.variacoes.length>0;
+        const hasStock=productHasStock(p);
+        const matchesStock=fStock==='todos'||(fStock==='disponivel'&&hasStock)||(fStock==='esgotado'&&!hasStock)||(fStock==='variacoes'&&hasVariations);
+        const haystack=normalizeAdminFilterText([p.name,p.codigo,p.marca,p.subcategory,p.banho].filter(Boolean).join(' '));
+        const matchesSearch=!query||haystack.includes(query);
+        return matchesCat&&matchesBath&&matchesSub&&matchesMarca&&matchesStock&&matchesSearch;
+      });
+      renderAdminProductList();
+      updateAdminFilterSummary();
     }
 
     function money(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
@@ -1207,8 +1378,8 @@
           </label>
           <img src="${p.images?.[0]||fallbackImg}" alt="${p.name || 'Produto'}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=fallbackImg">
           <div>
-            <h4 style="margin:0 0 4px; font-size:16px;">${p.name}</h4>
-            <small style="color:var(--muted)">${p.banho ? escapeHtml(p.banho)+' • ' : ''}${escapeHtml(p.subcategory||'')} ${p.marca ? '• '+escapeHtml(p.marca) : ''}</small>
+            <h4 style="margin:0 0 4px; font-size:16px;">${escapeHtml(p.name||'')}</h4>
+            <small style="color:var(--muted)">${p.banho ? `<span class="admin-bath-pill">${escapeHtml(p.banho)}</span>` : (p.category==='semijoias'?'<span class="admin-bath-pill" style="opacity:.65">Sem banho definido</span>':'')}${escapeHtml(p.subcategory||'')} ${p.marca ? '• '+escapeHtml(p.marca) : ''}</small>
             <div style="font-size:13px; margin-top:4px; font-weight:bold;">${precoDisplay} | ${estoqueStatus}</div>
           </div>
           <div class="prod-actions">
@@ -1227,12 +1398,8 @@
       const validIds=new Set(ps.map(p=>String(p.id)));
       [...selectedAdminProductIds].forEach(id=>{if(!validIds.has(id))selectedAdminProductIds.delete(id)});
       updateAdminFilterOptions(ps);
-      const fCat = document.getElementById('filterAdminCat').value; const fBath = document.getElementById('filterAdminBanho').value; const fSub = document.getElementById('filterAdminSub').value; const fMarca = document.getElementById('filterAdminMarca').value;
-
-      adminFilteredProducts = ps.filter(p => (fCat === 'todos' || p.category === fCat) && (fCat !== 'semijoias' || fBath === 'todos' || p.banho === fBath) && (fSub === 'todos' || p.subcategory === fSub) && (fMarca === 'todos' || p.marca === fMarca));
-      renderAdminProductList();
+      applyAdminFilters();
     }
-
 
     function setBusy(show, text='Processando...'){
       let overlay=document.getElementById('globalLoading');
