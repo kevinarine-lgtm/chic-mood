@@ -76,7 +76,7 @@
     .var-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: center; background: var(--card); padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
 
     /* FILTROS E MESA DE ESTOQUE */
-    .admin-filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; background: var(--sidebar-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
+    .admin-filters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; background: var(--sidebar-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
     .adminProduct { display: grid; grid-template-columns: 70px 1fr auto; gap: 20px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
     .adminProduct img { width: 70px; height: 70px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); }
     .prod-actions { display: flex; gap: 8px; align-items: center; }
@@ -309,14 +309,23 @@
             </div>
             <div class="field-group">
               <label>Categoria Principal</label>
-              <select id="category">
+              <select id="category" onchange="toggleBathField()">
                 <option value="semijoias">Semijoias</option>
                 <option value="perfumes">Perfumes</option>
               </select>
             </div>
             <div class="field-group">
-              <label>Gênero / Subcategoria</label>
-              <input id="subcategory" placeholder="Ex: Feminino, Masculino, Brincos...">
+              <label id="subcategoryLabel">Tipo de joia / Subcategoria</label>
+              <input id="subcategory" placeholder="Ex: Brincos, Colares, Feminino...">
+            </div>
+            <div id="banhoField" class="field-group">
+              <label>Tipo de banho</label>
+              <select id="banho">
+                <option value="">Selecione o banho</option>
+                <option value="Banhado a ouro">Banhado a ouro</option>
+                <option value="Banhado a ródio">Banhado a ródio</option>
+                <option value="Outro / sem banho">Outro / sem banho</option>
+              </select>
             </div>
             <div class="field-group full">
               <label>Marca / Fabricante</label>
@@ -427,6 +436,9 @@
             <option value="todos">Todas as Categorias</option>
             <option value="semijoias">Semijoias</option>
             <option value="perfumes">Perfumes</option>
+          </select>
+          <select id="filterAdminBanho" onchange="renderAdmin()" style="display:none">
+            <option value="todos">Todos os banhos</option>
           </select>
           <select id="filterAdminSub" onchange="renderAdmin()">
             <option value="todos">Todos os Gêneros/Linhas</option>
@@ -586,7 +598,7 @@
     
     const ADMIN_PASSWORD='px0507cx';
     const RECEIPTS_BUCKET = 'recibos-vendas';
-    let editingId=null; let editingImages=[]; let editingVideo=''; let localSelectedFiles=[];
+    let editingId=null; let editingImages=[]; let editingVideo=''; let localSelectedFiles=[]; let editingProductCreatedAt=null;
     let productVariacoes = [];
     let saleProducts = [];
     let saleCart = [];
@@ -602,9 +614,47 @@
 
     const fallbackImg='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="100%" height="100%" fill="#f3dfc6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#a87936" font-family="serif" font-size="44">Chic Mood</text></svg>`);
 
+    const PRODUCT_META_SEPARATOR='__CM_META__';
+
+    function parseStoredSubcategory(value){
+      const raw=String(value||'');
+      const separatorIndex=raw.indexOf(PRODUCT_META_SEPARATOR);
+      if(separatorIndex===-1) return {subcategory:raw,banho:'',createdAt:null};
+      const subcategory=raw.slice(0,separatorIndex);
+      const encodedMeta=raw.slice(separatorIndex+PRODUCT_META_SEPARATOR.length);
+      try{
+        const meta=JSON.parse(decodeURIComponent(encodedMeta));
+        return {
+          subcategory,
+          banho:String(meta.banho||''),
+          createdAt:meta.createdAt||null
+        };
+      }catch(error){
+        console.warn('Metadados do produto não puderam ser lidos:',error);
+        return {subcategory:raw,banho:'',createdAt:null};
+      }
+    }
+
+    function buildStoredSubcategory(subcategory,banho,createdAt){
+      const meta={};
+      if(banho) meta.banho=banho;
+      if(createdAt) meta.createdAt=createdAt;
+      if(Object.keys(meta).length===0) return subcategory;
+      return `${subcategory}${PRODUCT_META_SEPARATOR}${encodeURIComponent(JSON.stringify(meta))}`;
+    }
+
     async function fetchProductsFromNuvem(){
       const { data, error } = await db.from('produtos').select('*').order('id', { ascending: false });
-      return error ? [] : data;
+      if(error) return [];
+      return (data||[]).map(product=>{
+        const parsed=parseStoredSubcategory(product.subcategory);
+        return {
+          ...product,
+          subcategory:parsed.subcategory,
+          banho:parsed.banho,
+          productCreatedAt:parsed.createdAt
+        };
+      });
     }
     
     function login(){if(document.getElementById('pass').value===ADMIN_PASSWORD){localStorage.setItem('chicMoodLogged','yes');showAdmin()}else alert('Senha incorreta')}
@@ -621,6 +671,19 @@
       if(tab === 'manualSale') { document.getElementById('tabManualSale').classList.add('active'); document.getElementById('btnTabManualSale').classList.add('active'); loadManualSaleProducts(); }
       if(tab === 'expenses') { document.getElementById('tabExpenses').classList.add('active'); document.getElementById('btnTabExpenses').classList.add('active'); initExpenseForm(); loadExpenses(); }
       if(tab === 'receipts') { document.getElementById('tabReceipts').classList.add('active'); document.getElementById('btnTabReceipts').classList.add('active'); loadReceipts(); }
+    }
+
+    function toggleBathField(){
+      const category=document.getElementById('category').value;
+      const bathField=document.getElementById('banhoField');
+      const bath=document.getElementById('banho');
+      const label=document.getElementById('subcategoryLabel');
+      const subcategory=document.getElementById('subcategory');
+      const isJewelry=category==='semijoias';
+      bathField.style.display=isJewelry?'flex':'none';
+      label.textContent=isJewelry?'Tipo de joia':'Gênero / Linha';
+      subcategory.placeholder=isJewelry?'Ex: Brincos, Colares, Pulseiras...':'Ex: Feminino, Masculino, Floral...';
+      if(!isJewelry) bath.value='';
     }
 
     function renderVariacoes() {
@@ -646,11 +709,12 @@
     function removeVariacao(index) { productVariacoes.splice(index, 1); renderVariacoes(); }
 
     function clearForm(){
-      editingId=null; editingImages=[]; editingVideo=''; localSelectedFiles=[]; productVariacoes=[];
+      editingId=null; editingImages=[]; editingVideo=''; localSelectedFiles=[]; productVariacoes=[]; editingProductCreatedAt=null;
       ['name','price','subcategory','marca','photos','videoUrl','codigo','quantidade','precoCusto'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('banho').value='';
       document.getElementById('shortDescription').innerHTML = ''; document.getElementById('description').innerHTML = '';
       document.getElementById('category').value='semijoias'; document.getElementById('quantidade').value='1';
-      renderPreview(); renderVariacoes();
+      toggleBathField(); renderPreview(); renderVariacoes();
     }
 
     function renderPreview(){document.getElementById('previewImgs').innerHTML=editingImages.map((img,i)=>`<div><img src="${img}"><br><button class="danger" style="padding:2px 6px; font-size:10px; margin-top:4px;" onclick="removeImg(${i})">Remover</button></div>`).join('')}
@@ -825,6 +889,7 @@
       let price=parseFloat(String(document.getElementById('price').value).replace(',','.'));
       const category=document.getElementById('category').value;
       const subcategory=document.getElementById('subcategory').value.trim()||'';
+      const banho=category==='semijoias' ? document.getElementById('banho').value : null;
       const marca=document.getElementById('marca').value.trim()||'';
       const shortDescription = document.getElementById('shortDescription').innerHTML.trim();
       const description = document.getElementById('description').innerHTML.trim();
@@ -834,6 +899,7 @@
       const preco_custo=document.getElementById('precoCusto').value.trim() ? parseFloat(document.getElementById('precoCusto').value.replace(',','.')) : null;
 
       if (!name || (productVariacoes.length === 0 && isNaN(price))) { alert('Preencha os dados obrigatórios.'); return; }
+      if(category==='semijoias' && !banho){ alert('Selecione o tipo de banho da semijoia.'); return; }
       if(isNaN(price)) price = 0;
 
       let finalImages = editingImages.filter(img => !img.startsWith('data:image'));
@@ -859,7 +925,9 @@
       }
       if(finalImages.length === 0) finalImages = [fallbackImg];
 
-      const payload = { name, price, category, subcategory, marca, shortDescription, description, images: finalImages, video, codigo, quantidade, preco_custo, variacoes: productVariacoes };
+      const productCreatedAt=editingId ? editingProductCreatedAt : new Date().toISOString();
+      const storedSubcategory=buildStoredSubcategory(subcategory,banho,productCreatedAt);
+      const payload = { name, price, category, subcategory:storedSubcategory, marca, shortDescription, description, images: finalImages, video, codigo, quantidade, preco_custo, variacoes: productVariacoes };
 
       const { error } = editingId ? await db.from('produtos').update(payload).eq('id', editingId) : await db.from('produtos').insert([payload]);
       if(error) alert(error.message);
@@ -868,10 +936,11 @@
 
     async function editProduct(id){
       const ps = await fetchProductsFromNuvem(); const p=ps.find(x=>x.id===id); if(!p)return;
-      editingId=id; editingImages=[...(p.images||[])]; editingVideo=p.video||''; productVariacoes = p.variacoes || [];
+      editingId=id; editingImages=[...(p.images||[])]; editingVideo=p.video||''; productVariacoes = p.variacoes || []; editingProductCreatedAt=p.productCreatedAt||null;
       
       document.getElementById('name').value=p.name; document.getElementById('price').value=p.price;
       document.getElementById('category').value=p.category; document.getElementById('subcategory').value=p.subcategory||'';
+      toggleBathField(); document.getElementById('banho').value=p.banho||'';
       document.getElementById('marca').value=p.marca||''; document.getElementById('shortDescription').innerHTML=p.shortDescription||''; 
       document.getElementById('description').innerHTML=p.description||''; document.getElementById('videoUrl').value=p.video||'';
       document.getElementById('codigo').value=p.codigo||''; document.getElementById('quantidade').value=p.quantidade||0;
@@ -948,11 +1017,22 @@
     
     function updateAdminFilterOptions(ps) {
       const cat = document.getElementById('filterAdminCat').value;
+      const bathSel = document.getElementById('filterAdminBanho'); const oldBath = bathSel.value;
       const subSel = document.getElementById('filterAdminSub'); const oldSub = subSel.value;
       const marcaSel = document.getElementById('filterAdminMarca'); const oldMarca = marcaSel.value;
       let filtered = ps.filter(p => cat === 'todos' || p.category === cat);
+
+      const showBath = cat === 'semijoias';
+      bathSel.style.display = showBath ? '' : 'none';
+      if(showBath){
+        const baths=[...new Set(filtered.map(p=>p.banho).filter(Boolean))].sort();
+        bathSel.innerHTML='<option value="todos">Todos os banhos</option>'+baths.map(b=>`<option value="${b}">${b}</option>`).join('');
+        bathSel.value=baths.includes(oldBath)?oldBath:'todos';
+      }else bathSel.value='todos';
+
       let subs = [...new Set(filtered.map(p => p.subcategory).filter(Boolean))].sort();
-      subSel.innerHTML = '<option value="todos">Todos os Gêneros</option>' + subs.map(s => `<option value="${s}">${s}</option>`).join('');
+      const subLabel=cat==='semijoias'?'Todos os tipos de joia':'Todos os Gêneros/Linhas';
+      subSel.innerHTML = `<option value="todos">${subLabel}</option>` + subs.map(s => `<option value="${s}">${s}</option>`).join('');
       if(subs.includes(oldSub)) subSel.value = oldSub;
       let marcas = [...new Set(filtered.map(p => p.marca).filter(Boolean))].sort();
       marcaSel.innerHTML = '<option value="todos">Todas as Marcas</option>' + marcas.map(m => `<option value="${m}">${m}</option>`).join('');
@@ -963,9 +1043,9 @@
 
     async function renderAdmin(){
       const ps = await fetchProductsFromNuvem(); updateAdminFilterOptions(ps);
-      const fCat = document.getElementById('filterAdminCat').value; const fSub = document.getElementById('filterAdminSub').value; const fMarca = document.getElementById('filterAdminMarca').value;
+      const fCat = document.getElementById('filterAdminCat').value; const fBath = document.getElementById('filterAdminBanho').value; const fSub = document.getElementById('filterAdminSub').value; const fMarca = document.getElementById('filterAdminMarca').value;
 
-      let listaFiltrada = ps.filter(p => (fCat === 'todos' || p.category === fCat) && (fSub === 'todos' || p.subcategory === fSub) && (fMarca === 'todos' || p.marca === fMarca));
+      let listaFiltrada = ps.filter(p => (fCat === 'todos' || p.category === fCat) && (fCat !== 'semijoias' || fBath === 'todos' || p.banho === fBath) && (fSub === 'todos' || p.subcategory === fSub) && (fMarca === 'todos' || p.marca === fMarca));
       document.getElementById('totalCount').innerText = `${listaFiltrada.length} de ${ps.length} itens`;
       
       document.getElementById('adminList').innerHTML = listaFiltrada.map(p=>{
@@ -976,7 +1056,7 @@
           <img src="${p.images?.[0]||fallbackImg}" alt="${p.name || 'Produto'}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=fallbackImg">
           <div>
             <h4 style="margin:0 0 4px; font-size:16px;">${p.name}</h4>
-            <small style="color:var(--muted)">${p.subcategory||''} ${p.marca ? '• '+p.marca : ''}</small>
+            <small style="color:var(--muted)">${p.banho ? escapeHtml(p.banho)+' • ' : ''}${escapeHtml(p.subcategory||'')} ${p.marca ? '• '+escapeHtml(p.marca) : ''}</small>
             <div style="font-size:13px; margin-top:4px; font-weight:bold;">${precoDisplay} | ${estoqueStatus}</div>
           </div>
           <div class="prod-actions">
@@ -1540,6 +1620,7 @@
     async function cancelSale(id,number,origin='painel'){const historical=origin==='historica';if(!confirm(`Cancelar o recibo nº ${receiptNumber(number)}?
 ${historical?'Esta venda anterior não altera o estoque atual.':'O estoque dos itens será devolvido automaticamente.'}`))return;try{setBusy(true,historical?'Cancelando venda anterior...':'Cancelando venda e devolvendo o estoque...');const {error}=await db.rpc('cancelar_venda_chic_mood',{p_venda_id:id});if(error)throw error;await loadReceipts();await loadSalesDashboard();alert(historical?'Venda anterior cancelada. O estoque não foi alterado.':'Venda cancelada e estoque devolvido.') }catch(e){alert(`Não foi possível cancelar: ${e.message||e}`)}finally{setBusy(false)}}
 
+    toggleBathField();
     if(localStorage.getItem('chicMoodLogged')==='yes') showAdmin();
   </script>
 </body>
