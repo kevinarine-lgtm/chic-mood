@@ -586,7 +586,7 @@
           <div class="card-section">
             <h3>2. Dados da venda</h3>
             <div class="formGrid">
-              <div class="field-group full"><label>Nome do cliente</label><input id="saleClient" placeholder="Nome completo do cliente"></div>
+              <div class="field-group full"><label>Nome do cliente (opcional)</label><input id="saleClient" placeholder="Nome do cliente, se desejar informar"></div>
               <div class="field-group"><label>Pagamento</label><select id="salePayment"><option>Pix</option><option>Dinheiro</option><option>Cartão de débito</option><option>Cartão de crédito</option><option>Transferência</option><option>Outro</option></select></div>
               <div class="field-group"><label>Desconto (R$)</label><input id="saleDiscount" inputmode="decimal" value="0" oninput="renderSaleCart()"></div>
               <div class="field-group full"><label>Observação</label><textarea id="saleNote" rows="2" placeholder="Informações adicionais da venda"></textarea></div>
@@ -638,7 +638,7 @@
             <div class="formGrid">
               <div class="field-group"><label>Data e hora da venda</label><input id="manualSaleDate" type="datetime-local"></div>
               <div class="field-group"><label>Nº do recibo (opcional)</label><input id="manualReceiptNumber" type="number" min="1" placeholder="Ex: 001"></div>
-              <div class="field-group full"><label>Nome do cliente</label><input id="manualSaleClient" placeholder="Nome completo do cliente"></div>
+              <div class="field-group full"><label>Nome do cliente (opcional)</label><input id="manualSaleClient" placeholder="Nome do cliente, se desejar informar"></div>
               <div class="field-group"><label>Pagamento</label><select id="manualSalePayment"><option>Pix</option><option>Dinheiro</option><option>Cartão de débito</option><option>Cartão de crédito</option><option>Transferência</option><option>Outro</option></select></div>
               <div class="field-group"><label>Desconto (R$)</label><input id="manualSaleDiscount" inputmode="decimal" value="0" oninput="renderManualSale()"></div>
               <div class="field-group full"><label>Observação</label><textarea id="manualSaleNote" rows="2" placeholder="Informações sobre a venda anterior"></textarea></div>
@@ -1542,7 +1542,6 @@
 
     async function finishSale(){
       const cliente=document.getElementById('saleClient').value.trim();
-      if(!cliente)return alert('Informe o nome do cliente.');
       if(!saleCart.length)return alert('Selecione pelo menos um item.');
       const totals=saleTotals();
       if(totals.discount>totals.gross)return alert('O desconto não pode ser maior que o valor total antes do desconto.');
@@ -1668,7 +1667,6 @@
 
     async function finishManualSale(){
       const cliente=document.getElementById('manualSaleClient').value.trim();
-      if(!cliente)return alert('Informe o nome do cliente.');
       if(!manualSaleItems.length)return alert('Adicione pelo menos um item vendido.');
       const totals=manualSaleTotals();
       if(totals.discount>totals.gross)return alert('O desconto não pode ser maior que o valor total antes do desconto.');
@@ -1813,9 +1811,41 @@
       const subtotal=Number(venda.subtotal||items.reduce((s,x)=>s+Number(x.price||0)*Number(x.qty||0),0));
       const total=Number(venda.total||0);
       const W=1080;
-      const rowH=items.length>1?150:250;
+
+      // Coordenadas fixas das colunas do recibo.
+      const productTextX=235;
+      const productMaxWidth=350;
+      const qtyCenterX=635;
+      const qtyMaxWidth=72;
+      const unitRightX=825;
+      const unitMaxWidth=150;
+      const totalRightX=980;
+      const totalMaxWidth=135;
+
+      // Antes de criar o canvas definitivo, calculamos quantas linhas cada nome
+      // ocupará. Assim, cada card recebe a altura necessária e o nome nunca
+      // invade a categoria, os valores ou o próximo produto.
+      const multipleItems=items.length>1;
+      const productFontSize=multipleItems?22:28;
+      const productLineHeight=multipleItems?32:40;
+      const minimumRowHeight=multipleItems?150:250;
+      const measureCanvas=document.createElement('canvas');
+      const measureContext=measureCanvas.getContext('2d');
+      measureContext.font=`${productFontSize}px Georgia`;
+
+      const itemLayouts=items.map(item=>{
+        const nameLines=getWrappedCanvasLines(measureContext,item.name||'Produto',productMaxWidth);
+        const requiredTextHeight=28+(nameLines.length*productLineHeight)+10+22+20;
+        return {
+          item,
+          nameLines,
+          rowHeight:Math.max(minimumRowHeight,requiredTextHeight)
+        };
+      });
+
+      const itemsTotalHeight=itemLayouts.reduce((sum,layout)=>sum+layout.rowHeight,0);
       const summaryLineCount=1+extras.length+(discount>0?1:0)+1;
-      const H=Math.max(1450,760+items.length*rowH+summaryLineCount*45+310);
+      const H=Math.max(1450,760+itemsTotalHeight+summaryLineCount*45+310);
       const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const c=canvas.getContext('2d');
       c.fillStyle='#fffaf3';c.fillRect(0,0,W,H);c.strokeStyle='#b78335';c.lineWidth=3;c.strokeRect(20,20,W-40,H-40);c.strokeRect(32,32,W-64,H-64);
       c.textAlign='center';c.fillStyle='#a87936';c.font='italic 96px Georgia';c.fillText('Chic Mood',W/2,165);c.font='25px Georgia';c.fillText('S E M I J O I A S   •   P E R F U M E S',W/2,220);c.fillStyle='#2f2118';c.font='bold 64px Georgia';c.fillText('RECIBO DE VENDA',W/2,315);
@@ -1840,17 +1870,6 @@
       fitCanvasText(c,receiptNumber(venda.numero_recibo),infoCenters[1],435,infoColW-36,25,'Arial');
       fitCanvasText(c,'Chic Mood',infoCenters[2],435,infoColW-36,25,'Arial');
 
-      // Coordenadas fixas das colunas. Valores monetários ficam alinhados à direita
-      // e têm redução automática da fonte para nunca ultrapassarem o quadro.
-      const productTextX=235;
-      const productMaxWidth=350;
-      const qtyCenterX=635;
-      const qtyMaxWidth=72;
-      const unitRightX=825;
-      const unitMaxWidth=150;
-      const totalRightX=980;
-      const totalMaxWidth=135;
-
       let y=500;
       c.fillStyle='#f6e7d4';roundRect(c,70,y,W-140,58,18);c.fill();
       c.fillStyle='#3b291e';c.font='24px Arial';
@@ -1861,14 +1880,27 @@
       fitCanvasText(c,'TOTAL',totalRightX,y+38,totalMaxWidth,24,'Arial','',16);
 
       y+=70;
-      for(const item of items){
+      for(const layout of itemLayouts){
+        const item=layout.item;
+        const rowH=layout.rowHeight;
         roundRect(c,70,y,W-140,rowH-10,16);c.strokeStyle='#e2c9a4';c.stroke();
-        let img=null;try{img=await loadCanvasImage(item.image)}catch(_){img=null}
-        if(img){c.save();roundRect(c,90,y+18,120,rowH-46,12);c.clip();c.drawImage(img,90,y+18,120,rowH-46);c.restore()}
 
-        c.textAlign='left';c.fillStyle='#39271c';c.font=items.length>1?'22px Georgia':'28px Georgia';
-        wrapText(c,item.name,productTextX,y+52,productMaxWidth,34);
-        c.fillStyle='#a87936';c.font='18px Arial';
+        let img=null;try{img=await loadCanvasImage(item.image)}catch(_){img=null}
+        if(img){
+          c.save();
+          roundRect(c,90,y+18,120,rowH-46,12);
+          c.clip();
+          c.drawImage(img,90,y+18,120,rowH-46);
+          c.restore();
+        }
+
+        c.textAlign='left';
+        c.fillStyle='#39271c';
+        c.font=`${productFontSize}px Georgia`;
+        drawWrappedCanvasLines(c,layout.nameLines,productTextX,y+52,productLineHeight);
+
+        c.fillStyle='#a87936';
+        c.font='18px Arial';
         c.fillText(item.category==='perfumes'?'PERFUME':'SEMIJOIA',productTextX,y+rowH-34);
 
         const qty=Number(item.qty||0);
@@ -1929,7 +1961,59 @@
       }while(size>minSize);
       c.fillText(value,x,y);
     }
-    function wrapText(c,text,x,y,maxWidth,lineHeight){const words=String(text).split(' ');let line='';for(const word of words){const test=line+word+' ';if(c.measureText(test).width>maxWidth&&line){c.fillText(line,x,y);line=word+' ';y+=lineHeight}else line=test}c.fillText(line,x,y)}
+    function splitCanvasWord(c,word,maxWidth){
+      const parts=[];
+      let current='';
+      for(const character of String(word||'')){
+        const test=current+character;
+        if(current&&c.measureText(test).width>maxWidth){
+          parts.push(current);
+          current=character;
+        }else{
+          current=test;
+        }
+      }
+      if(current)parts.push(current);
+      return parts.length?parts:[''];
+    }
+    function getWrappedCanvasLines(c,text,maxWidth){
+      const paragraphs=String(text??'').replace(/\r/g,'').split('\n');
+      const lines=[];
+
+      paragraphs.forEach(paragraph=>{
+        const words=paragraph.trim().split(/\s+/).filter(Boolean);
+        if(!words.length){
+          if(lines.length)lines.push('');
+          return;
+        }
+
+        let line='';
+        for(const word of words){
+          const parts=c.measureText(word).width>maxWidth?splitCanvasWord(c,word,maxWidth):[word];
+          parts.forEach((part,index)=>{
+            const separator=line&&index===0?' ':'';
+            const test=`${line}${separator}${part}`;
+            if(line&&c.measureText(test).width>maxWidth){
+              lines.push(line);
+              line=part;
+            }else{
+              line=test;
+            }
+
+            if(index<parts.length-1){
+              lines.push(line);
+              line='';
+            }
+          });
+        }
+        if(line)lines.push(line);
+      });
+
+      return lines.length?lines:['Produto'];
+    }
+    function drawWrappedCanvasLines(c,lines,x,y,lineHeight){
+      lines.forEach((line,index)=>c.fillText(line,x,y+(index*lineHeight)));
+    }
     function loadCanvasImage(src){return new Promise((resolve,reject)=>{const img=new Image();img.crossOrigin='anonymous';img.onload=()=>resolve(img);img.onerror=reject;img.src=src})}
     function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
 
