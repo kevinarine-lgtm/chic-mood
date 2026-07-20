@@ -561,7 +561,7 @@
 
         const hasVideo = p.video && String(p.video).trim() !== '' && String(p.video).trim() !== 'null';
         const stockBadge = isEsgotado ? `<div class="badge-esgotado">Fora de Estoque</div>` : '';
-        const newBadge = isNewProduct(p.productCreatedAt) ? `<div class="badge-novo">Novo produto</div>` : '';
+        const newBadge = isNewProduct(p.productCreatedAt) ? `<div class="badge-novo">Nova Coleção</div>` : '';
         const btnHTML = isEsgotado 
           ? `<button class="cartBtn btn-disabled" disabled>Fora de estoque</button>`
           : `<button class="primary" onclick="quickAddFromCard(event, ${p.id})">${hasVar ? 'Ver opções' : 'Adicionar ao carrinho'}</button>`;
